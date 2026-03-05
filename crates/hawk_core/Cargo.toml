@@ -1,5 +1,6 @@
 [package]
 name = "hawk_core"
+description = "Graph model, statistics, and data structures for AWS infrastructure mapping"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

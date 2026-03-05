@@ -1,5 +1,6 @@
 [package]
 name = "hawk_cli"
+description = "CLI tool for discovering and analyzing AWS serverless infrastructure"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -1,5 +1,6 @@
 [package]
 name = "hawk_aws"
+description = "AWS SDK discovery modules for Lambda, EventBridge, S3, SNS, Logs, Step Functions, and API Gateway"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

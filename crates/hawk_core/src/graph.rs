@@ -122,6 +122,12 @@ pub struct Graph {
     pub stats: GraphStats,
 }
 
+impl Default for Graph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Graph {
     pub fn new() -> Self {
         Self {

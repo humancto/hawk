@@ -38,7 +38,7 @@ pub fn resource_kind_from_arn(arn: &str) -> hawk_core::NodeKind {
 
 /// Extract a short name from an ARN (last segment after : or /).
 pub fn name_from_arn(arn: &str) -> String {
-    arn.rsplit(|c| c == ':' || c == '/')
+    arn.rsplit([':', '/'])
         .next()
         .unwrap_or(arn)
         .to_string()

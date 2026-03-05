@@ -1,5 +1,6 @@
 [package]
 name = "hawk_viewer"
+description = "Interactive 2D Bevy viewer for Hawk infrastructure graphs"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

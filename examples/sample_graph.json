@@ -1,0 +1,302 @@
+{
+  "generated_at": "2026-03-05T12:00:00+00:00",
+  "profile": "demo",
+  "regions": ["us-east-1"],
+  "nodes": [
+    {
+      "id": "arn:aws:lambda:us-east-1:123456789012:function:order-processor",
+      "kind": "Lambda",
+      "name": "order-processor",
+      "arn": "arn:aws:lambda:us-east-1:123456789012:function:order-processor",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {
+        "runtime": "nodejs20.x",
+        "memory_size": 512,
+        "timeout": 30,
+        "handler": "index.handler",
+        "architectures": ["arm64"],
+        "env_keys": ["DATABASE_URL", "ORDER_TABLE", "NOTIFICATION_TOPIC_ARN"]
+      }
+    },
+    {
+      "id": "arn:aws:lambda:us-east-1:123456789012:function:notification-sender",
+      "kind": "Lambda",
+      "name": "notification-sender",
+      "arn": "arn:aws:lambda:us-east-1:123456789012:function:notification-sender",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {
+        "runtime": "python3.12",
+        "memory_size": 256,
+        "timeout": 15,
+        "handler": "handler.send",
+        "architectures": ["x86_64"],
+        "env_keys": ["SMTP_HOST", "FROM_ADDRESS"]
+      }
+    },
+    {
+      "id": "arn:aws:lambda:us-east-1:123456789012:function:image-resizer",
+      "kind": "Lambda",
+      "name": "image-resizer",
+      "arn": "arn:aws:lambda:us-east-1:123456789012:function:image-resizer",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {
+        "runtime": "rust",
+        "memory_size": 1024,
+        "timeout": 60,
+        "handler": "bootstrap",
+        "architectures": ["arm64"],
+        "env_keys": ["OUTPUT_BUCKET", "MAX_WIDTH"]
+      }
+    },
+    {
+      "id": "arn:aws:lambda:us-east-1:123456789012:function:daily-report",
+      "kind": "Lambda",
+      "name": "daily-report",
+      "arn": "arn:aws:lambda:us-east-1:123456789012:function:daily-report",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {
+        "runtime": "python3.12",
+        "memory_size": 256,
+        "timeout": 300,
+        "handler": "report.generate",
+        "architectures": ["x86_64"],
+        "env_keys": ["REPORT_BUCKET", "DATABASE_URL"]
+      }
+    },
+    {
+      "id": "arn:aws:lambda:us-east-1:123456789012:function:auth-handler",
+      "kind": "Lambda",
+      "name": "auth-handler",
+      "arn": "arn:aws:lambda:us-east-1:123456789012:function:auth-handler",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {
+        "runtime": "nodejs20.x",
+        "memory_size": 128,
+        "timeout": 10,
+        "handler": "auth.handler",
+        "architectures": ["arm64"],
+        "env_keys": ["JWT_SECRET_ARN", "USER_POOL_ID"]
+      }
+    },
+    {
+      "id": "arn:aws:sqs:us-east-1:123456789012:order-queue",
+      "kind": "SqsQueue",
+      "name": "order-queue",
+      "arn": "arn:aws:sqs:us-east-1:123456789012:order-queue",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {}
+    },
+    {
+      "id": "arn:aws:sqs:us-east-1:123456789012:notification-dlq",
+      "kind": "SqsQueue",
+      "name": "notification-dlq",
+      "arn": "arn:aws:sqs:us-east-1:123456789012:notification-dlq",
+      "region": "us-east-1",
+      "account_id": "123456789012",
+      "props": {}
+    },
+    {
+      "id": "arn:aws:events:us-east-1:123456789012:rule/daily-report-schedule",
+      "kind": "EventRule",
+      "name": "daily-report-schedule",
+      "arn": "arn:aws:events:us-east-1:123456789012:rule/daily-report-schedule",
+      "region": "us-east-1",
+      "props": {
+        "schedule_expression": "cron(0 8 * * ? *)",
+        "state": "ENABLED"
+      }
+    },
+    {
+      "id": "arn:aws:events:us-east-1:123456789012:rule/order-completed",
+      "kind": "EventRule",
+      "name": "order-completed",
+      "arn": "arn:aws:events:us-east-1:123456789012:rule/order-completed",
+      "region": "us-east-1",
+      "props": {
+        "event_pattern": "{\"source\":[\"app.orders\"],\"detail-type\":[\"OrderCompleted\"]}",
+        "state": "ENABLED"
+      }
+    },
+    {
+      "id": "arn:aws:s3:::product-images-bucket",
+      "kind": "S3Bucket",
+      "name": "product-images-bucket",
+      "arn": "arn:aws:s3:::product-images-bucket",
+      "region": "us-east-1",
+      "props": {}
+    },
+    {
+      "id": "arn:aws:sns:us-east-1:123456789012:order-notifications",
+      "kind": "SnsTopic",
+      "name": "order-notifications",
+      "arn": "arn:aws:sns:us-east-1:123456789012:order-notifications",
+      "region": "us-east-1",
+      "props": {}
+    },
+    {
+      "id": "arn:aws:states:us-east-1:123456789012:stateMachine:order-fulfillment",
+      "kind": "StepFunction",
+      "name": "order-fulfillment",
+      "arn": "arn:aws:states:us-east-1:123456789012:stateMachine:order-fulfillment",
+      "region": "us-east-1",
+      "props": {}
+    },
+    {
+      "id": "apigwv2:abc123def:us-east-1",
+      "kind": "ApiGateway",
+      "name": "orders-api",
+      "region": "us-east-1",
+      "props": {
+        "protocol_type": "HTTP"
+      }
+    },
+    {
+      "id": "route:abc123def:rt-001",
+      "kind": "ApiRoute",
+      "name": "POST /orders",
+      "region": "us-east-1",
+      "props": {
+        "route_key": "POST /orders",
+        "authorization_type": "JWT"
+      }
+    },
+    {
+      "id": "route:abc123def:rt-002",
+      "kind": "ApiRoute",
+      "name": "GET /orders/{id}",
+      "region": "us-east-1",
+      "props": {
+        "route_key": "GET /orders/{id}",
+        "authorization_type": "JWT"
+      }
+    },
+    {
+      "id": "loggroup:/aws/lambda/order-processor",
+      "kind": "LogGroup",
+      "name": "/aws/lambda/order-processor",
+      "arn": "arn:aws:logs:us-east-1:123456789012:log-group:/aws/lambda/order-processor",
+      "region": "us-east-1",
+      "props": {
+        "retention_in_days": 14
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "arn:aws:sqs:us-east-1:123456789012:order-queue",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:order-processor",
+      "kind": "Triggers",
+      "props": { "batch_size": 10, "enabled": "Enabled" }
+    },
+    {
+      "from": "arn:aws:events:us-east-1:123456789012:rule/daily-report-schedule",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:daily-report",
+      "kind": "Triggers",
+      "props": { "target_id": "daily-report-target" }
+    },
+    {
+      "from": "arn:aws:events:us-east-1:123456789012:rule/order-completed",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:notification-sender",
+      "kind": "Triggers",
+      "props": { "target_id": "notification-target" }
+    },
+    {
+      "from": "arn:aws:s3:::product-images-bucket",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:image-resizer",
+      "kind": "Triggers",
+      "props": { "events": ["s3:ObjectCreated:*"] }
+    },
+    {
+      "from": "arn:aws:sns:us-east-1:123456789012:order-notifications",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:notification-sender",
+      "kind": "Triggers",
+      "props": { "protocol": "lambda" }
+    },
+    {
+      "from": "arn:aws:states:us-east-1:123456789012:stateMachine:order-fulfillment",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:order-processor",
+      "kind": "Invokes",
+      "props": {}
+    },
+    {
+      "from": "arn:aws:states:us-east-1:123456789012:stateMachine:order-fulfillment",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:notification-sender",
+      "kind": "Invokes",
+      "props": {}
+    },
+    {
+      "from": "apigwv2:abc123def:us-east-1",
+      "to": "route:abc123def:rt-001",
+      "kind": "Triggers",
+      "props": {}
+    },
+    {
+      "from": "apigwv2:abc123def:us-east-1",
+      "to": "route:abc123def:rt-002",
+      "kind": "Triggers",
+      "props": {}
+    },
+    {
+      "from": "route:abc123def:rt-001",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:order-processor",
+      "kind": "Triggers",
+      "props": { "route_key": "POST /orders", "integration_type": "AWS_PROXY" }
+    },
+    {
+      "from": "route:abc123def:rt-002",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:order-processor",
+      "kind": "Triggers",
+      "props": { "route_key": "GET /orders/{id}", "integration_type": "AWS_PROXY" }
+    },
+    {
+      "from": "loggroup:/aws/lambda/order-processor",
+      "to": "arn:aws:lambda:us-east-1:123456789012:function:notification-sender",
+      "kind": "Triggers",
+      "props": { "filter_pattern": "ERROR", "distribution": "ByLogStream" }
+    }
+  ],
+  "warnings": [],
+  "stats": {
+    "node_count": 16,
+    "edge_count": 12,
+    "nodes_by_kind": {
+      "Lambda": 5,
+      "SqsQueue": 2,
+      "EventRule": 2,
+      "S3Bucket": 1,
+      "SnsTopic": 1,
+      "StepFunction": 1,
+      "ApiGateway": 1,
+      "ApiRoute": 2,
+      "LogGroup": 1
+    },
+    "edges_by_kind": {
+      "Triggers": 10,
+      "Invokes": 2
+    },
+    "top_fan_in": [
+      ["arn:aws:lambda:us-east-1:123456789012:function:order-processor", 4],
+      ["arn:aws:lambda:us-east-1:123456789012:function:notification-sender", 3],
+      ["arn:aws:lambda:us-east-1:123456789012:function:daily-report", 1],
+      ["arn:aws:lambda:us-east-1:123456789012:function:image-resizer", 1]
+    ],
+    "top_fan_out": [
+      ["apigwv2:abc123def:us-east-1", 2],
+      ["arn:aws:states:us-east-1:123456789012:stateMachine:order-fulfillment", 2],
+      ["arn:aws:events:us-east-1:123456789012:rule/order-completed", 1],
+      ["arn:aws:events:us-east-1:123456789012:rule/daily-report-schedule", 1],
+      ["arn:aws:s3:::product-images-bucket", 1],
+      ["arn:aws:sns:us-east-1:123456789012:order-notifications", 1],
+      ["arn:aws:sqs:us-east-1:123456789012:order-queue", 1],
+      ["route:abc123def:rt-001", 1],
+      ["route:abc123def:rt-002", 1],
+      ["loggroup:/aws/lambda/order-processor", 1]
+    ]
+  }
+}

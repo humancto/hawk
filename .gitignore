@@ -1,6 +1,24 @@
+# Build
 /target
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
 *.swp
 *.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Hawk output
 hawk.json
 hawk.mmd
+*.mmd
+
+# Environment / secrets
+.env
+.env.*
+credentials.json
