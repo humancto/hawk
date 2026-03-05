@@ -127,3 +127,81 @@ jobs:
         run: |
           sleep 30
           cargo publish -p hawk-cloud --allow-dirty || true
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Compute SHA256 hashes
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin; do
+            FILE="artifacts/hawk-${target}/hawk-${REF_NAME}-${target}.tar.gz"
+            HASH=$(sha256sum "${FILE}" | awk '{print $1}')
+            VAR=$(echo "${target}" | tr '-' '_')
+            echo "SHA_${VAR}=${HASH}" >> "$GITHUB_ENV"
+          done
+
+      - name: Update formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA_x86_64_unknown_linux_gnu: ${{ env.SHA_x86_64_unknown_linux_gnu }}
+          SHA_aarch64_unknown_linux_gnu: ${{ env.SHA_aarch64_unknown_linux_gnu }}
+          SHA_x86_64_apple_darwin: ${{ env.SHA_x86_64_apple_darwin }}
+          SHA_aarch64_apple_darwin: ${{ env.SHA_aarch64_apple_darwin }}
+        run: |
+          VERSION="${REF_NAME#v}"
+          cat > hawk.rb <<FORMULA
+          class Hawk < Formula
+            desc "Map your AWS serverless architecture in seconds"
+            homepage "https://github.com/humancto/hawk"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/humancto/hawk/releases/download/${REF_NAME}/hawk-${REF_NAME}-aarch64-apple-darwin.tar.gz"
+                sha256 "${SHA_aarch64_apple_darwin}"
+              else
+                url "https://github.com/humancto/hawk/releases/download/${REF_NAME}/hawk-${REF_NAME}-x86_64-apple-darwin.tar.gz"
+                sha256 "${SHA_x86_64_apple_darwin}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/humancto/hawk/releases/download/${REF_NAME}/hawk-${REF_NAME}-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA_aarch64_unknown_linux_gnu}"
+              else
+                url "https://github.com/humancto/hawk/releases/download/${REF_NAME}/hawk-${REF_NAME}-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA_x86_64_unknown_linux_gnu}"
+              end
+            end
+
+            def install
+              bin.install "hawk"
+            end
+
+            test do
+              assert_match "hawk", shell_output("#{bin}/hawk --help")
+            end
+          end
+          FORMULA
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' hawk.rb
+
+          git clone https://x-access-token:${GH_TOKEN}@github.com/humancto/homebrew-tap.git tap
+          cp hawk.rb tap/Formula/hawk.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/hawk.rb
+          git commit -m "Update hawk to ${REF_NAME}"
+          git push
