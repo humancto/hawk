@@ -173,6 +173,13 @@ impl Graph {
 
     /// Compute graph statistics.
     pub fn compute_stats(&mut self) {
+        // Build id -> name lookup for human-readable fan-in/fan-out labels
+        let id_to_name: HashMap<&str, &str> = self
+            .nodes
+            .iter()
+            .map(|n| (n.id.as_str(), n.name.as_str()))
+            .collect();
+
         let mut nodes_by_kind: IndexMap<String, usize> = IndexMap::new();
         for node in &self.nodes {
             *nodes_by_kind.entry(node.kind.to_string()).or_default() += 1;
@@ -183,22 +190,30 @@ impl Graph {
             *edges_by_kind.entry(edge.kind.to_string()).or_default() += 1;
         }
 
-        // Fan-in: count incoming edges per node
+        // Fan-in: count incoming edges per node (resolve to name)
         let mut fan_in: HashMap<String, usize> = HashMap::new();
         for edge in &self.edges {
-            *fan_in.entry(edge.to.clone()).or_default() += 1;
+            let label = id_to_name
+                .get(edge.to.as_str())
+                .unwrap_or(&edge.to.as_str())
+                .to_string();
+            *fan_in.entry(label).or_default() += 1;
         }
         let mut top_fan_in: Vec<(String, usize)> = fan_in.into_iter().collect();
-        top_fan_in.sort_by(|a, b| b.1.cmp(&a.1));
+        top_fan_in.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
         top_fan_in.truncate(10);
 
-        // Fan-out: count outgoing edges per node
+        // Fan-out: count outgoing edges per node (resolve to name)
         let mut fan_out: HashMap<String, usize> = HashMap::new();
         for edge in &self.edges {
-            *fan_out.entry(edge.from.clone()).or_default() += 1;
+            let label = id_to_name
+                .get(edge.from.as_str())
+                .unwrap_or(&edge.from.as_str())
+                .to_string();
+            *fan_out.entry(label).or_default() += 1;
         }
         let mut top_fan_out: Vec<(String, usize)> = fan_out.into_iter().collect();
-        top_fan_out.sort_by(|a, b| b.1.cmp(&a.1));
+        top_fan_out.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
         top_fan_out.truncate(10);
 
         self.stats = GraphStats {
@@ -396,7 +411,7 @@ mod tests {
         assert_eq!(g.stats.node_count, 3);
         assert_eq!(g.stats.edge_count, 2);
         assert_eq!(g.stats.nodes_by_kind["Lambda"], 2);
-        assert_eq!(g.stats.top_fan_out[0], ("q1".to_string(), 2));
+        assert_eq!(g.stats.top_fan_out[0], ("queue1".to_string(), 2));
     }
 
     #[test]

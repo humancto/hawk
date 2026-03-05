@@ -1,6 +1,6 @@
 use crate::ctx::AwsCtx;
-use hawk_core::Graph;
-use tracing::info;
+use hawk_core::{DiscoveryOutput, Graph};
+use tracing::{info, warn};
 
 /// Which discovery modules to run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -9,7 +9,22 @@ pub enum Scope {
     All,
 }
 
+/// Merge a discovery result into the graph, converting errors into warnings
+/// so that one service failure doesn't kill the entire scan.
+fn merge_result(graph: &mut Graph, service: &str, result: anyhow::Result<DiscoveryOutput>) {
+    match result {
+        Ok(output) => graph.merge(output),
+        Err(e) => {
+            let msg = format!("{service} discovery failed: {e}");
+            warn!("{msg}");
+            graph.warnings.push(msg);
+        }
+    }
+}
+
 /// Run discovery against AWS and return a merged Graph.
+/// Individual service failures are captured as warnings rather than
+/// aborting the entire scan (graceful degradation).
 pub async fn discover_all(
     ctx: &AwsCtx,
     scope: Scope,
@@ -21,8 +36,8 @@ pub async fn discover_all(
 
     // Lambda is always included
     info!("Starting Lambda discovery...");
-    let lambda_output = crate::lambda::discover(ctx).await;
-    graph.merge(lambda_output);
+    let lambda_result = crate::lambda::discover(ctx).await;
+    merge_result(&mut graph, "Lambda", lambda_result);
 
     if scope == Scope::All {
         // Run remaining discoveries concurrently
@@ -35,20 +50,20 @@ pub async fn discover_all(
             crate::apigw::discover(ctx),
         );
 
-        graph.merge(eb);
-        graph.merge(s3);
-        graph.merge(sns);
-        graph.merge(logs);
-        graph.merge(sfn);
-        graph.merge(apigw);
+        merge_result(&mut graph, "EventBridge", eb);
+        merge_result(&mut graph, "S3", s3);
+        merge_result(&mut graph, "SNS", sns);
+        merge_result(&mut graph, "CloudWatch Logs", logs);
+        merge_result(&mut graph, "Step Functions", sfn);
+        merge_result(&mut graph, "API Gateway v2", apigw);
     }
 
     graph.dedupe_and_sort();
     graph.compute_stats();
 
     info!(
-        "Discovery complete: {} nodes, {} edges",
-        graph.stats.node_count, graph.stats.edge_count
+        "Discovery complete: {} nodes, {} edges, {} warnings",
+        graph.stats.node_count, graph.stats.edge_count, graph.warnings.len()
     );
 
     Ok(graph)

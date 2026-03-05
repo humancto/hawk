@@ -2,7 +2,7 @@ use crate::ctx::AwsCtx;
 use hawk_core::{DiscoveryOutput, Edge, EdgeKind, Node, NodeKind};
 use tracing::{info, warn};
 
-pub async fn discover(ctx: &AwsCtx) -> DiscoveryOutput {
+pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
     let mut output = DiscoveryOutput::default();
     let region = ctx.region_str();
 
@@ -23,7 +23,7 @@ pub async fn discover(ctx: &AwsCtx) -> DiscoveryOutput {
             }
             Err(e) => {
                 output.warnings.push(format!("SNS ListTopics error: {e}"));
-                return output;
+                return Ok(output);
             }
         }
     }
@@ -96,5 +96,5 @@ pub async fn discover(ctx: &AwsCtx) -> DiscoveryOutput {
         }
     }
 
-    output
+    Ok(output)
 }

@@ -281,22 +281,22 @@
       "Invokes": 2
     },
     "top_fan_in": [
-      ["arn:aws:lambda:us-east-1:123456789012:function:order-processor", 4],
-      ["arn:aws:lambda:us-east-1:123456789012:function:notification-sender", 3],
-      ["arn:aws:lambda:us-east-1:123456789012:function:daily-report", 1],
-      ["arn:aws:lambda:us-east-1:123456789012:function:image-resizer", 1]
+      ["order-processor", 4],
+      ["notification-sender", 4],
+      ["daily-report", 1],
+      ["image-resizer", 1]
     ],
     "top_fan_out": [
-      ["apigwv2:abc123def:us-east-1", 2],
-      ["arn:aws:states:us-east-1:123456789012:stateMachine:order-fulfillment", 2],
-      ["arn:aws:events:us-east-1:123456789012:rule/order-completed", 1],
-      ["arn:aws:events:us-east-1:123456789012:rule/daily-report-schedule", 1],
-      ["arn:aws:s3:::product-images-bucket", 1],
-      ["arn:aws:sns:us-east-1:123456789012:order-notifications", 1],
-      ["arn:aws:sqs:us-east-1:123456789012:order-queue", 1],
-      ["route:abc123def:rt-001", 1],
-      ["route:abc123def:rt-002", 1],
-      ["loggroup:/aws/lambda/order-processor", 1]
+      ["orders-api", 2],
+      ["order-fulfillment", 2],
+      ["/aws/lambda/order-processor", 1],
+      ["GET /orders/{id}", 1],
+      ["POST /orders", 1],
+      ["daily-report-schedule", 1],
+      ["order-completed", 1],
+      ["order-notifications", 1],
+      ["order-queue", 1],
+      ["product-images-bucket", 1]
     ]
   }
 }

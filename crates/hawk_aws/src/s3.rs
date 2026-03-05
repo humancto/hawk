@@ -2,7 +2,7 @@ use crate::ctx::AwsCtx;
 use hawk_core::{DiscoveryOutput, Edge, EdgeKind, Node, NodeKind};
 use tracing::info;
 
-pub async fn discover(ctx: &AwsCtx) -> DiscoveryOutput {
+pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
     let mut output = DiscoveryOutput::default();
     let region = ctx.region_str();
 
@@ -10,7 +10,7 @@ pub async fn discover(ctx: &AwsCtx) -> DiscoveryOutput {
         Ok(resp) => resp.buckets.unwrap_or_default(),
         Err(e) => {
             output.warnings.push(format!("S3 ListBuckets error: {e}"));
-            return output;
+            return Ok(output);
         }
     };
 
@@ -82,5 +82,5 @@ pub async fn discover(ctx: &AwsCtx) -> DiscoveryOutput {
         }
     }
 
-    output
+    Ok(output)
 }

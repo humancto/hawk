@@ -8,6 +8,7 @@ pub mod logs;
 pub mod sfn;
 pub mod apigw;
 mod arn;
+pub mod retry;
 
 pub use ctx::AwsCtx;
 pub use discover::discover_all;

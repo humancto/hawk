@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -21,6 +21,9 @@ enum Commands {
         /// Input hawk.json file
         #[arg(long, default_value = "hawk.json")]
         r#in: PathBuf,
+        /// Output format: text or json
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
     },
     /// Export graph to different formats
     Export {
@@ -35,7 +38,24 @@ enum Commands {
         /// New hawk.json
         #[arg(long)]
         new: PathBuf,
+        /// Output format: text or json
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
+        /// Exit with code 1 if changes detected (for CI)
+        #[arg(long)]
+        exit_code: bool,
     },
+    /// Watch for infrastructure changes by re-scanning periodically
+    Watch {
+        #[command(subcommand)]
+        target: WatchTarget,
+    },
+}
+
+#[derive(Clone, ValueEnum)]
+enum OutputFormat {
+    Text,
+    Json,
 }
 
 #[derive(Subcommand)]
@@ -63,12 +83,12 @@ enum AwsScope {
 
 #[derive(Parser, Clone)]
 struct AwsOpts {
-    /// AWS profile name
-    #[arg(long)]
-    profile: Option<String>,
-    /// AWS region
-    #[arg(long)]
-    region: Option<String>,
+    /// AWS profile name(s), comma-separated for multi-account
+    #[arg(long, value_delimiter = ',')]
+    profile: Vec<String>,
+    /// AWS region(s), comma-separated for multi-region scanning
+    #[arg(long, value_delimiter = ',')]
+    region: Vec<String>,
     /// Output file path
     #[arg(long, default_value = "hawk.json")]
     out: PathBuf,
@@ -94,6 +114,55 @@ enum ExportFormat {
         #[arg(long)]
         full: bool,
     },
+    /// Export as Graphviz DOT diagram
+    Dot {
+        /// Input hawk.json file
+        #[arg(long, default_value = "hawk.json")]
+        r#in: PathBuf,
+        /// Output .dot file
+        #[arg(long, default_value = "hawk.dot")]
+        out: PathBuf,
+        /// Show all node types (not just Lambda + triggers)
+        #[arg(long)]
+        full: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum WatchTarget {
+    /// Watch AWS resources for changes
+    Aws {
+        #[command(subcommand)]
+        scope: WatchAwsScope,
+    },
+}
+
+#[derive(Subcommand)]
+enum WatchAwsScope {
+    /// Watch all supported AWS resources
+    All {
+        #[command(flatten)]
+        opts: WatchOpts,
+    },
+}
+
+#[derive(Parser, Clone)]
+struct WatchOpts {
+    /// AWS profile name(s), comma-separated for multi-account
+    #[arg(long, value_delimiter = ',')]
+    profile: Vec<String>,
+    /// AWS region(s), comma-separated for multi-region
+    #[arg(long, value_delimiter = ',')]
+    region: Vec<String>,
+    /// Interval between scans (e.g. "5m", "30s", "1h")
+    #[arg(long, default_value = "5m")]
+    interval: String,
+    /// Output file path
+    #[arg(long, default_value = "hawk.json")]
+    out: PathBuf,
+    /// Enable verbose logging
+    #[arg(long)]
+    verbose: bool,
 }
 
 #[tokio::main]
@@ -110,14 +179,7 @@ async fn main() -> Result<()> {
 
                 init_tracing(opts.verbose);
 
-                let ctx = hawk_aws::AwsCtx::new(
-                    opts.profile.as_deref(),
-                    opts.region.as_deref(),
-                )
-                .await?;
-
-                let graph =
-                    hawk_aws::discover_all(&ctx, discover_scope, opts.profile.as_deref()).await?;
+                let graph = run_discovery(&opts, discover_scope).await?;
 
                 // Write JSON
                 let json = if opts.pretty {
@@ -133,10 +195,25 @@ async fn main() -> Result<()> {
             }
         },
 
-        Commands::Summary { r#in: input } => {
+        Commands::Summary {
+            r#in: input,
+            format,
+        } => {
             let data = std::fs::read_to_string(&input)?;
             let graph: hawk_core::Graph = serde_json::from_str(&data)?;
-            print_summary(&graph);
+            match format {
+                OutputFormat::Text => print_summary(&graph),
+                OutputFormat::Json => {
+                    let summary = serde_json::json!({
+                        "generated_at": graph.generated_at,
+                        "profile": graph.profile,
+                        "regions": graph.regions,
+                        "stats": graph.stats,
+                        "warnings": graph.warnings,
+                    });
+                    println!("{}", serde_json::to_string_pretty(&summary)?);
+                }
+            }
         }
 
         Commands::Export { format } => match format {
@@ -155,50 +232,219 @@ async fn main() -> Result<()> {
                 std::fs::write(&out, &mmd)?;
                 println!("Mermaid diagram written to {}", out.display());
             }
+            ExportFormat::Dot {
+                r#in: input,
+                out,
+                full,
+            } => {
+                let data = std::fs::read_to_string(&input)?;
+                let graph: hawk_core::Graph = serde_json::from_str(&data)?;
+                let opts = hawk_render::DotOptions {
+                    full,
+                    ..Default::default()
+                };
+                let dot = hawk_render::render_dot(&graph, &opts);
+                std::fs::write(&out, &dot)?;
+                println!("DOT diagram written to {}", out.display());
+            }
         },
 
-        Commands::Diff { old, new } => {
+        Commands::Diff {
+            old,
+            new,
+            format,
+            exit_code,
+        } => {
             let old_data = std::fs::read_to_string(&old)?;
             let new_data = std::fs::read_to_string(&new)?;
             let old_graph: hawk_core::Graph = serde_json::from_str(&old_data)?;
             let new_graph: hawk_core::Graph = serde_json::from_str(&new_data)?;
             let diff = hawk_core::GraphDiff::compute(&old_graph, &new_graph);
 
-            println!("=== Graph Diff ===\n");
-            if diff.added_nodes.is_empty() && diff.removed_nodes.is_empty()
-                && diff.added_edges.is_empty() && diff.removed_edges.is_empty()
-            {
-                println!("No changes detected.");
-            } else {
-                if !diff.added_nodes.is_empty() {
-                    println!("Added nodes ({}):", diff.added_nodes.len());
-                    for n in &diff.added_nodes {
-                        println!("  + {n}");
+            let has_changes = !diff.added_nodes.is_empty()
+                || !diff.removed_nodes.is_empty()
+                || !diff.added_edges.is_empty()
+                || !diff.removed_edges.is_empty();
+
+            match format {
+                OutputFormat::Text => {
+                    println!("=== Graph Diff ===\n");
+                    if !has_changes {
+                        println!("No changes detected.");
+                    } else {
+                        if !diff.added_nodes.is_empty() {
+                            println!("Added nodes ({}):", diff.added_nodes.len());
+                            for n in &diff.added_nodes {
+                                println!("  + {n}");
+                            }
+                        }
+                        if !diff.removed_nodes.is_empty() {
+                            println!("Removed nodes ({}):", diff.removed_nodes.len());
+                            for n in &diff.removed_nodes {
+                                println!("  - {n}");
+                            }
+                        }
+                        if !diff.added_edges.is_empty() {
+                            println!("Added edges ({}):", diff.added_edges.len());
+                            for e in &diff.added_edges {
+                                println!("  + {e}");
+                            }
+                        }
+                        if !diff.removed_edges.is_empty() {
+                            println!("Removed edges ({}):", diff.removed_edges.len());
+                            for e in &diff.removed_edges {
+                                println!("  - {e}");
+                            }
+                        }
                     }
                 }
-                if !diff.removed_nodes.is_empty() {
-                    println!("Removed nodes ({}):", diff.removed_nodes.len());
-                    for n in &diff.removed_nodes {
-                        println!("  - {n}");
-                    }
-                }
-                if !diff.added_edges.is_empty() {
-                    println!("Added edges ({}):", diff.added_edges.len());
-                    for e in &diff.added_edges {
-                        println!("  + {e}");
-                    }
-                }
-                if !diff.removed_edges.is_empty() {
-                    println!("Removed edges ({}):", diff.removed_edges.len());
-                    for e in &diff.removed_edges {
-                        println!("  - {e}");
-                    }
+                OutputFormat::Json => {
+                    println!("{}", serde_json::to_string_pretty(&diff)?);
                 }
             }
+
+            if exit_code && has_changes {
+                std::process::exit(1);
+            }
         }
+
+        Commands::Watch { target } => match target {
+            WatchTarget::Aws { scope } => match scope {
+                WatchAwsScope::All { opts: watch_opts } => {
+                    init_tracing(watch_opts.verbose);
+
+                    let interval = parse_duration(&watch_opts.interval)?;
+                    let aws_opts = AwsOpts {
+                        profile: watch_opts.profile,
+                        region: watch_opts.region,
+                        out: watch_opts.out,
+                        pretty: true,
+                        verbose: watch_opts.verbose,
+                    };
+
+                    println!(
+                        "Watching for changes every {}s. Press Ctrl-C to stop.\n",
+                        interval.as_secs()
+                    );
+
+                    let mut prev_graph: Option<hawk_core::Graph> = None;
+                    loop {
+                        let graph =
+                            run_discovery(&aws_opts, hawk_aws::discover::Scope::All).await?;
+
+                        let json = serde_json::to_string_pretty(&graph)?;
+                        std::fs::write(&aws_opts.out, &json)?;
+
+                        if let Some(ref old) = prev_graph {
+                            let diff = hawk_core::GraphDiff::compute(old, &graph);
+                            let has_changes = !diff.added_nodes.is_empty()
+                                || !diff.removed_nodes.is_empty()
+                                || !diff.added_edges.is_empty()
+                                || !diff.removed_edges.is_empty();
+                            if has_changes {
+                                println!(
+                                    "[{}] Changes detected:",
+                                    chrono::Utc::now().format("%H:%M:%S")
+                                );
+                                for n in &diff.added_nodes {
+                                    println!("  + node: {n}");
+                                }
+                                for n in &diff.removed_nodes {
+                                    println!("  - node: {n}");
+                                }
+                                for e in &diff.added_edges {
+                                    println!("  + edge: {e}");
+                                }
+                                for e in &diff.removed_edges {
+                                    println!("  - edge: {e}");
+                                }
+                            } else {
+                                println!(
+                                    "[{}] No changes ({} nodes, {} edges)",
+                                    chrono::Utc::now().format("%H:%M:%S"),
+                                    graph.stats.node_count,
+                                    graph.stats.edge_count
+                                );
+                            }
+                        } else {
+                            println!(
+                                "[{}] Initial scan: {} nodes, {} edges",
+                                chrono::Utc::now().format("%H:%M:%S"),
+                                graph.stats.node_count,
+                                graph.stats.edge_count
+                            );
+                        }
+
+                        prev_graph = Some(graph);
+                        tokio::time::sleep(interval).await;
+                    }
+                }
+            },
+        },
     }
 
     Ok(())
+}
+
+/// Run discovery across multiple profiles and regions, merging results.
+async fn run_discovery(
+    opts: &AwsOpts,
+    scope: hawk_aws::discover::Scope,
+) -> Result<hawk_core::Graph> {
+    let profiles: Vec<Option<&str>> = if opts.profile.is_empty() {
+        vec![None]
+    } else {
+        opts.profile.iter().map(|p| Some(p.as_str())).collect()
+    };
+    let regions: Vec<Option<&str>> = if opts.region.is_empty() {
+        vec![None]
+    } else {
+        opts.region.iter().map(|r| Some(r.as_str())).collect()
+    };
+
+    let mut merged = hawk_core::Graph::new();
+
+    for profile in &profiles {
+        for region in &regions {
+            let ctx = hawk_aws::AwsCtx::new(*profile, *region).await?;
+            let graph = hawk_aws::discover_all(&ctx, scope, *profile).await?;
+
+            // Merge regions list
+            for r in &graph.regions {
+                if !merged.regions.contains(r) {
+                    merged.regions.push(r.clone());
+                }
+            }
+
+            merged.nodes.extend(graph.nodes);
+            merged.edges.extend(graph.edges);
+            merged.warnings.extend(graph.warnings);
+        }
+    }
+
+    // Set profile info
+    if !opts.profile.is_empty() {
+        merged.profile = Some(opts.profile.join(","));
+    }
+
+    merged.dedupe_and_sort();
+    merged.compute_stats();
+    Ok(merged)
+}
+
+/// Parse a human-readable duration string like "5m", "30s", "1h".
+fn parse_duration(s: &str) -> Result<std::time::Duration> {
+    let s = s.trim();
+    if let Some(val) = s.strip_suffix('s') {
+        Ok(std::time::Duration::from_secs(val.parse()?))
+    } else if let Some(val) = s.strip_suffix('m') {
+        Ok(std::time::Duration::from_secs(val.parse::<u64>()? * 60))
+    } else if let Some(val) = s.strip_suffix('h') {
+        Ok(std::time::Duration::from_secs(val.parse::<u64>()? * 3600))
+    } else {
+        // Default: treat as seconds
+        Ok(std::time::Duration::from_secs(s.parse()?))
+    }
 }
 
 fn init_tracing(verbose: bool) {
@@ -232,18 +478,16 @@ fn print_summary(graph: &hawk_core::Graph) {
     if !graph.stats.top_fan_in.is_empty() {
         println!();
         println!("Top fan-in (most triggered):");
-        for (id, count) in &graph.stats.top_fan_in {
-            let short = id.rsplit(':').next().unwrap_or(id);
-            println!("  {short}: {count}");
+        for (name, count) in &graph.stats.top_fan_in {
+            println!("  {name}: {count}");
         }
     }
 
     if !graph.stats.top_fan_out.is_empty() {
         println!();
         println!("Top fan-out (most connections):");
-        for (id, count) in &graph.stats.top_fan_out {
-            let short = id.rsplit(':').next().unwrap_or(id);
-            println!("  {short}: {count}");
+        for (name, count) in &graph.stats.top_fan_out {
+            println!("  {name}: {count}");
         }
     }
 
