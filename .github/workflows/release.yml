@@ -50,7 +50,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release --target "$TARGET" -p hawk_cli
+        run: cargo build --release --target "$TARGET" -p hawk-cloud
         env:
           TARGET: ${{ matrix.target }}
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
@@ -121,9 +121,9 @@ jobs:
           sleep 30
           cargo publish -p hawk_aws --allow-dirty || true
 
-      - name: Publish hawk_cli
+      - name: Publish hawk-cloud
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           sleep 30
-          cargo publish -p hawk_cli --allow-dirty || true
+          cargo publish -p hawk-cloud --allow-dirty || true

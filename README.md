@@ -5,7 +5,7 @@
   </p>
   <p align="center">
     <a href="https://github.com/humancto/hawk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/humancto/hawk/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI"></a>
-    <a href="https://crates.io/crates/hawk_cli"><img src="https://img.shields.io/crates/v/hawk_cli?style=flat-square&logo=rust&color=orange" alt="crates.io"></a>
+    <a href="https://crates.io/crates/hawk-cloud"><img src="https://img.shields.io/crates/v/hawk-cloud?style=flat-square&logo=rust&color=orange" alt="crates.io"></a>
     <a href="https://github.com/humancto/hawk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
     <a href="https://github.com/humancto/hawk/releases"><img src="https://img.shields.io/github/v/release/humancto/hawk?style=flat-square&logo=github&color=green" alt="Release"></a>
     <img src="https://img.shields.io/badge/rust-1.75%2B-orange?style=flat-square&logo=rust" alt="MSRV">
@@ -72,13 +72,13 @@ Point it at an AWS account, get a complete picture of what triggers what.
 ```bash
 git clone https://github.com/humancto/hawk.git
 cd hawk
-cargo install --path crates/hawk_cli
+cargo install --path crates/hawk-cloud
 ```
 
 ### Install from crates.io
 
 ```bash
-cargo install hawk_cli
+cargo install hawk-cloud
 ```
 
 ### Run Your First Scan
@@ -354,7 +354,7 @@ hawk/
 ├── crates/
 │   ├── hawk_core/              # Graph model, stats, dedupe, redaction
 │   ├── hawk_aws/               # AWS SDK discovery modules (7 connectors)
-│   ├── hawk_cli/               # CLI binary (clap-based)
+│   ├── hawk-cloud/               # CLI binary (clap-based)
 │   └── hawk_render/            # Mermaid renderer
 ├── apps/
 │   └── hawk_viewer/            # Bevy 2D interactive viewer
