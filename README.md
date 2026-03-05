@@ -25,19 +25,9 @@ Hawk is a CLI tool and interactive viewer that automatically discovers AWS Lambd
 
 Point it at an AWS account, get a complete picture of what triggers what.
 
-```
-                ┌─────────────┐     ┌─────────────┐
-                │ EventBridge │────▶│   Lambda A   │
-                └─────────────┘     └──────┬──────┘
-                                           │
-┌─────────────┐     ┌─────────────┐        ▼
-│  S3 Bucket  │────▶│   Lambda B   │◀── SNS Topic
-└─────────────┘     └─────────────┘
-                                     ▲
-                ┌─────────────┐      │
-                │ Step Function├─────┘
-                └─────────────┘
-```
+<p align="center">
+  <img src="assets/screenshots/hawk-analyze.png" alt="hawk analyze" width="800">
+</p>
 
 ## Why Hawk?
 
@@ -147,6 +137,13 @@ Discover AWS resources and write a graph JSON file.
 
 Print human-readable stats from a scan.
 
+<p align="center">
+  <img src="assets/screenshots/hawk-summary.png" alt="hawk summary" width="800">
+</p>
+
+<details>
+<summary>Example output</summary>
+
 ```
 === Hawk Summary ===
 
@@ -175,6 +172,8 @@ Top fan-out (most connections):
   main-event-bus: 6
 ```
 
+</details>
+
 ### `hawk export mermaid`
 
 Generate a Mermaid flowchart diagram.
@@ -186,6 +185,10 @@ Generate a Mermaid flowchart diagram.
 | `--full`       | off         | Show all node types |
 
 Output works with GitHub Markdown, Notion, or the [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli).
+
+<p align="center">
+  <img src="assets/screenshots/hawk-mermaid.png" alt="hawk mermaid export" width="800">
+</p>
 
 ### `hawk diff`
 
