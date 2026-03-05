@@ -38,14 +38,14 @@ Point it at an AWS account, get a complete picture of what triggers what.
 
 ## Features
 
-| Feature                  | Description                                            |
-| ------------------------ | ------------------------------------------------------ |
-| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity           |
-| **Deterministic output** | Sorted, deduped JSON for stable diffs                  |
-| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer    |
-| **Snapshot diffing**     | Compare two scans to see what changed                  |
-| **Interactive viewer**   | Bevy 2D app with search, filters, and layer toggles    |
-| **Security-conscious**   | Env var values, secrets, and tokens are never exported |
+| Feature                  | Description                                              |
+| ------------------------ | -------------------------------------------------------- |
+| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity             |
+| **Deterministic output** | Sorted, deduped JSON for stable diffs                    |
+| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer      |
+| **Snapshot diffing**     | Compare two scans to see what changed                    |
+| **Interactive viewer**   | Bevy 2D app with force layout, pan/zoom, search, filters |
+| **Security-conscious**   | Env var values, secrets, and tokens are never exported   |
 
 ---
 
@@ -276,18 +276,25 @@ Output JSON follows a stable, documented schema:
 
 ## Interactive Viewer
 
-The Bevy-based viewer renders the graph as a 2D node-and-edge map.
+The Bevy-based viewer renders the graph as an interactive 2D node-and-edge map with force-directed layout.
 
-| Action      | Input        |
-| ----------- | ------------ |
-| Select node | Click        |
-| Pan         | Drag         |
-| Zoom        | Scroll wheel |
+| Action      | Input            |
+| ----------- | ---------------- |
+| Select node | Left click       |
+| Pan         | Right-click drag |
+| Zoom        | Scroll wheel     |
+
+**Features:**
+
+- **Force-directed layout** — nodes are positioned using physics simulation with band constraints
+- **Node icons** — each node displays a service type label (fn, Q, S3, EB, SNS, SF, API, CW, DB)
+- **Directional edges** — arrows show trigger/invocation direction
+- **Connection details** — selected nodes show incoming/outgoing edges with source/target names
 
 **UI panels:**
 
-- **Left panel** — search bar, layer toggles (Compute / Events / Storage / Orchestration)
-- **Right panel** — selected node details (name, kind, ARN, region, properties)
+- **Left panel** — search bar, layer toggles, stats, color legend, controls reference
+- **Right panel** — selected node details (name, kind, ARN, region, connections, properties)
 
 | Layer         | Node Kinds                                                                |
 | ------------- | ------------------------------------------------------------------------- |
@@ -385,7 +392,7 @@ Unit tests don't require AWS credentials — they test ARN parsing, graph operat
 - [ ] API Gateway v1 (REST APIs) discovery
 - [ ] Multi-region scanning in a single run
 - [ ] Multi-account scanning (AWS Organizations)
-- [ ] Force-directed graph layout in the viewer
+- [x] Force-directed graph layout in the viewer
 - [ ] HTML export with interactive SVG
 - [ ] Cost annotations via Cost Explorer API
 - [ ] CloudFormation / CDK stack grouping
