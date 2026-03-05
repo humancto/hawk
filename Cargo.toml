@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/hawk_core",
+    "crates/hawk_aws",
+    "crates/hawk_cli",
+    "crates/hawk_render",
+    "apps/hawk_viewer",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"

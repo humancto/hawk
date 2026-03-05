@@ -1,0 +1,23 @@
+[package]
+name = "hawk_aws"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+hawk_core = { path = "../hawk_core" }
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-sdk-lambda = "1"
+aws-sdk-eventbridge = "1"
+aws-sdk-s3 = "1"
+aws-sdk-sns = "1"
+aws-sdk-cloudwatchlogs = "1"
+aws-sdk-sfn = "1"
+aws-sdk-apigatewayv2 = "1"
+aws-sdk-sqs = "1"
+tokio = { version = "1", features = ["full"] }
+regex = "1"
+serde_json = "1"
+tracing = "0.1"
+futures = "0.3"
+anyhow = "1"

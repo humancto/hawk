@@ -1,0 +1,20 @@
+[package]
+name = "hawk_cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "hawk"
+path = "src/main.rs"
+
+[dependencies]
+hawk_core = { path = "../hawk_core" }
+hawk_aws = { path = "../hawk_aws" }
+hawk_render = { path = "../hawk_render" }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde_json = "1"
