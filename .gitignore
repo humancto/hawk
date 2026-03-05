@@ -17,6 +17,7 @@ Thumbs.db
 hawk.json
 hawk.mmd
 *.mmd
+*.dot
 
 # Environment / secrets
 .env
