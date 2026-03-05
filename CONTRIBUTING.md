@@ -8,8 +8,8 @@ Thanks for your interest in contributing! This guide will help you get set up.
 
 2. **Clone and build:**
    ```bash
-   git clone https://github.com/humancto/octopussy.git
-   cd octopussy
+   git clone https://github.com/humancto/hawk.git
+   cd hawk
    cargo build
    ```
 

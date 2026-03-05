@@ -59,8 +59,8 @@ Hawk scans your AWS account using the AWS SDK for Rust, builds a directed graph 
 
 ```bash
 # Clone and build
-git clone https://github.com/humancto/octopussy.git
-cd octopussy
+git clone https://github.com/humancto/hawk.git
+cd hawk
 cargo build --release
 
 # The binary is at target/release/hawk
