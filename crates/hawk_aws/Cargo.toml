@@ -11,7 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-hawk_core = { path = "../hawk_core" }
+hawk_core = { path = "../hawk_core", version = "0.1.0" }
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-sdk-lambda = "1"
 aws-sdk-eventbridge = "1"

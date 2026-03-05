@@ -15,9 +15,9 @@ name = "hawk"
 path = "src/main.rs"
 
 [dependencies]
-hawk_core = { path = "../hawk_core" }
-hawk_aws = { path = "../hawk_aws" }
-hawk_render = { path = "../hawk_render" }
+hawk_core = { path = "../hawk_core", version = "0.1.0" }
+hawk_aws = { path = "../hawk_aws", version = "0.1.0" }
+hawk_render = { path = "../hawk_render", version = "0.1.0" }
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 tokio = { version = "1", features = ["full"] }
