@@ -1,6 +1,25 @@
-# Hawk
+<p align="center">
+  <h1 align="center">Hawk</h1>
+  <p align="center">
+    <strong>Map your AWS serverless architecture in seconds.</strong>
+  </p>
+  <p align="center">
+    <a href="https://github.com/humancto/hawk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/humancto/hawk/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI"></a>
+    <a href="https://crates.io/crates/hawk_cli"><img src="https://img.shields.io/crates/v/hawk_cli?style=flat-square&logo=rust&color=orange" alt="crates.io"></a>
+    <a href="https://github.com/humancto/hawk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
+    <a href="https://github.com/humancto/hawk/releases"><img src="https://img.shields.io/github/v/release/humancto/hawk?style=flat-square&logo=github&color=green" alt="Release"></a>
+    <img src="https://img.shields.io/badge/rust-1.75%2B-orange?style=flat-square&logo=rust" alt="MSRV">
+  </p>
+  <p align="center">
+    <a href="#quick-start">Quick Start</a> &middot;
+    <a href="#cli-reference">CLI Reference</a> &middot;
+    <a href="#interactive-viewer">Viewer</a> &middot;
+    <a href="#aws-coverage">AWS Coverage</a> &middot;
+    <a href="#contributing">Contributing</a>
+  </p>
+</p>
 
-**Map your AWS serverless architecture in seconds.**
+---
 
 Hawk is a CLI tool and interactive viewer that automatically discovers AWS Lambda functions, their triggers, and connected services — then renders the entire architecture as a navigable graph.
 
@@ -20,30 +39,23 @@ Point it at an AWS account, get a complete picture of what triggers what.
                 └─────────────┘
 ```
 
----
+## Why Hawk?
 
-## About
-
-Hawk scans your AWS account using the AWS SDK for Rust, builds a directed graph of Lambda functions and every service that triggers or invokes them, and outputs the result as structured JSON. From there you can generate Mermaid diagrams, diff snapshots over time, or explore the graph interactively in a Bevy-powered 2D viewer.
-
-**Why Hawk?**
-- You inherited an AWS account and need to understand what's connected to what
-- You want to audit Lambda trigger chains before making changes
-- You need a visual map for architecture reviews or onboarding
-- You want to track infrastructure drift by diffing snapshots
-
-**Tags:** `#aws` `#lambda` `#serverless` `#infrastructure-as-graph` `#architecture-visualization` `#rust` `#bevy` `#cloud-discovery` `#devops` `#aws-sdk-rust` `#mermaid` `#infrastructure-mapping`
-
----
+- **You inherited an AWS account** and need to understand what's connected to what
+- **You want to audit Lambda trigger chains** before making changes
+- **You need a visual map** for architecture reviews or onboarding
+- **You want to track infrastructure drift** by diffing snapshots over time
 
 ## Features
 
-- **Auto-discovery** — scans 7 AWS services for Lambda connectivity
-- **Deterministic output** — sorted, deduped JSON for stable diffs
-- **Mermaid export** — paste into GitHub, Notion, or any Markdown renderer
-- **Snapshot diffing** — compare two scans to see what changed
-- **Interactive viewer** — Bevy 2D app with search, filters, and layer toggles
-- **Security-conscious** — env var values, secrets, and tokens are never exported
+| Feature                  | Description                                            |
+| ------------------------ | ------------------------------------------------------ |
+| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity           |
+| **Deterministic output** | Sorted, deduped JSON for stable diffs                  |
+| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer    |
+| **Snapshot diffing**     | Compare two scans to see what changed                  |
+| **Interactive viewer**   | Bevy 2D app with search, filters, and layer toggles    |
+| **Security-conscious**   | Env var values, secrets, and tokens are never exported |
 
 ---
 
@@ -53,19 +65,20 @@ Hawk scans your AWS account using the AWS SDK for Rust, builds a directed graph 
 
 - **Rust 1.75+** — [install via rustup](https://rustup.rs)
 - **AWS credentials** — configured via `~/.aws/credentials`, environment variables, or SSO
-- **AWS permissions** — read-only access to Lambda, EventBridge, S3, SNS, CloudWatch Logs, Step Functions, API Gateway v2 (see [IAM Policy](#iam-policy) below)
+- **AWS permissions** — read-only access ([see IAM policy](#iam-policy))
 
-### Install
+### Install from source
 
 ```bash
-# Clone and build
 git clone https://github.com/humancto/hawk.git
 cd hawk
-cargo build --release
+cargo install --path crates/hawk_cli
+```
 
-# The binary is at target/release/hawk
-# Optionally copy to your PATH:
-cp target/release/hawk /usr/local/bin/
+### Install from crates.io
+
+```bash
+cargo install hawk_cli
 ```
 
 ### Run Your First Scan
@@ -101,7 +114,7 @@ hawk export mermaid --in hawk.json --out hawk.mmd --full
 hawk diff --old baseline.json --new current.json
 ```
 
-### Launch the Viewer
+### Launch the Interactive Viewer
 
 ```bash
 cargo run --release -p hawk_viewer -- hawk.json
@@ -115,20 +128,20 @@ cargo run --release -p hawk_viewer -- hawk.json
 
 Discover AWS resources and write a graph JSON file.
 
-| Scope    | Description |
-|----------|-------------|
+| Scope    | Description                                   |
+| -------- | --------------------------------------------- |
 | `lambda` | Lambda functions + event source mappings only |
-| `all`    | All supported AWS services |
+| `all`    | All supported AWS services                    |
 
 **Flags:**
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--profile <name>` | env default | AWS profile name |
-| `--region <name>` | env default | AWS region |
-| `--out <file>` | `hawk.json` | Output file path |
-| `--pretty` | off | Pretty-print JSON |
-| `--verbose` | off | Enable debug logging |
+| Flag               | Default     | Description          |
+| ------------------ | ----------- | -------------------- |
+| `--profile <name>` | env default | AWS profile name     |
+| `--region <name>`  | env default | AWS region           |
+| `--out <file>`     | `hawk.json` | Output file path     |
+| `--pretty`         | off         | Pretty-print JSON    |
+| `--verbose`        | off         | Enable debug logging |
 
 ### `hawk summary`
 
@@ -166,13 +179,13 @@ Top fan-out (most connections):
 
 Generate a Mermaid flowchart diagram.
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--in <file>` | `hawk.json` | Input graph file |
-| `--out <file>` | `hawk.mmd` | Output Mermaid file |
-| `--full` | off | Show all node types |
+| Flag           | Default     | Description         |
+| -------------- | ----------- | ------------------- |
+| `--in <file>`  | `hawk.json` | Input graph file    |
+| `--out <file>` | `hawk.mmd`  | Output Mermaid file |
+| `--full`       | off         | Show all node types |
 
-The output can be pasted directly into GitHub Markdown, Notion, or rendered with the [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli).
+Output works with GitHub Markdown, Notion, or the [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli).
 
 ### `hawk diff`
 
@@ -201,21 +214,21 @@ Added edges (2):
 
 ## AWS Coverage
 
-| Source | Target | Edge Kind | How |
-|--------|--------|-----------|-----|
-| **SQS / DynamoDB / Kinesis** | Lambda | Triggers | `ListEventSourceMappings` |
-| **EventBridge rules** | Lambda | Triggers | `ListRules` + `ListTargetsByRule` |
-| **S3 notifications** | Lambda | Triggers | `GetBucketNotificationConfiguration` |
-| **SNS subscriptions** | Lambda | Triggers | `ListSubscriptionsByTopic` |
-| **CloudWatch Logs** | Lambda | Triggers | `DescribeSubscriptionFilters` |
-| **Step Functions** | Lambda | Invokes | `DescribeStateMachine` (definition parse) |
-| **API Gateway v2** | Lambda | Triggers | `GetRoutes` + `GetIntegrations` |
+| Source                       | Target | Edge Kind | Discovery Method                          |
+| ---------------------------- | ------ | --------- | ----------------------------------------- |
+| **SQS / DynamoDB / Kinesis** | Lambda | Triggers  | `ListEventSourceMappings`                 |
+| **EventBridge rules**        | Lambda | Triggers  | `ListRules` + `ListTargetsByRule`         |
+| **S3 notifications**         | Lambda | Triggers  | `GetBucketNotificationConfiguration`      |
+| **SNS subscriptions**        | Lambda | Triggers  | `ListSubscriptionsByTopic`                |
+| **CloudWatch Logs**          | Lambda | Triggers  | `DescribeSubscriptionFilters`             |
+| **Step Functions**           | Lambda | Invokes   | `DescribeStateMachine` (definition parse) |
+| **API Gateway v2**           | Lambda | Triggers  | `GetRoutes` + `GetIntegrations`           |
 
 ---
 
 ## Graph Schema
 
-The output JSON follows a stable schema:
+Output JSON follows a stable, documented schema:
 
 ```jsonc
 {
@@ -235,26 +248,26 @@ The output JSON follows a stable schema:
         "memory_size": 256,
         "timeout": 30,
         "handler": "index.handler",
-        "env_keys": ["DATABASE_URL", "API_KEY"]  // values redacted
-      }
-    }
+        "env_keys": ["DATABASE_URL", "API_KEY"], // values redacted
+      },
+    },
   ],
   "edges": [
     {
       "from": "arn:aws:sqs:us-east-1:123456789012:my-queue",
       "to": "arn:aws:lambda:us-east-1:123456789012:function:my-fn",
       "kind": "Triggers",
-      "props": { "batch_size": 10 }
-    }
+      "props": { "batch_size": 10 },
+    },
   ],
   "warnings": [],
-  "stats": { "node_count": 2, "edge_count": 1, "..." : "..." }
+  "stats": { "node_count": 2, "edge_count": 1 },
 }
 ```
 
-**Node kinds:** Lambda, ApiGateway, ApiRoute, EventRule, SqsQueue, SnsTopic, S3Bucket, DynamoStream, StepFunction, LogGroup, EcsService, Ec2Instance, LoadBalancer, Unknown
+**Node kinds:** `Lambda` `ApiGateway` `ApiRoute` `EventRule` `SqsQueue` `SnsTopic` `S3Bucket` `DynamoStream` `StepFunction` `LogGroup` `EcsService` `Ec2Instance` `LoadBalancer` `Unknown`
 
-**Edge kinds:** Triggers, Invokes, Consumes, Publishes, ReadsFrom, WritesTo
+**Edge kinds:** `Triggers` `Invokes` `Consumes` `Publishes` `ReadsFrom` `WritesTo`
 
 ---
 
@@ -262,30 +275,32 @@ The output JSON follows a stable schema:
 
 The Bevy-based viewer renders the graph as a 2D node-and-edge map.
 
-**Controls:**
-| Action | Input |
-|--------|-------|
-| Select node | Click |
-| Pan | Drag |
-| Zoom | Scroll wheel |
+| Action      | Input        |
+| ----------- | ------------ |
+| Select node | Click        |
+| Pan         | Drag         |
+| Zoom        | Scroll wheel |
 
 **UI panels:**
+
 - **Left panel** — search bar, layer toggles (Compute / Events / Storage / Orchestration)
 - **Right panel** — selected node details (name, kind, ARN, region, properties)
 
-**Layers:**
-| Layer | Node kinds |
-|-------|-----------|
-| Compute | Lambda, ECS Service, EC2 Instance |
-| Events | EventBridge Rule, API Gateway, API Route, SNS Topic, SQS Queue, Log Group |
-| Storage | S3 Bucket, DynamoDB Stream |
-| Orchestration | Step Function |
+| Layer         | Node Kinds                                                                |
+| ------------- | ------------------------------------------------------------------------- |
+| Compute       | Lambda, ECS Service, EC2 Instance                                         |
+| Events        | EventBridge Rule, API Gateway, API Route, SNS Topic, SQS Queue, Log Group |
+| Storage       | S3 Bucket, DynamoDB Stream                                                |
+| Orchestration | Step Function                                                             |
 
 ---
 
 ## IAM Policy
 
-Hawk requires **read-only** access. Here's a minimal IAM policy:
+Hawk requires **read-only** access. Minimal policy:
+
+<details>
+<summary>Click to expand IAM policy JSON</summary>
 
 ```json
 {
@@ -315,6 +330,20 @@ Hawk requires **read-only** access. Here's a minimal IAM policy:
 }
 ```
 
+</details>
+
+---
+
+## Security & Data Safety
+
+Hawk is designed to be safe to run against production accounts:
+
+- Environment variable **values are never exported** — only keys are recorded
+- Secrets, tokens, and auth data are **redacted** from all output
+- **No write operations** — Hawk only calls read/list/describe APIs
+- **No data leaves your machine** — output is written to local files only
+- Inline policy documents are excluded unless explicitly requested
+
 ---
 
 ## Project Structure
@@ -329,11 +358,8 @@ hawk/
 │   └── hawk_render/            # Mermaid renderer
 ├── apps/
 │   └── hawk_viewer/            # Bevy 2D interactive viewer
-├── examples/
-│   └── sample_graph.json       # Example output for testing
-└── assets/
-    ├── sprites/                # Node sprite assets
-    └── fonts/                  # Font assets
+└── examples/
+    └── sample_graph.json       # Example output for testing
 ```
 
 ---
@@ -341,37 +367,13 @@ hawk/
 ## Development
 
 ```bash
-# Check compilation
-cargo check --workspace
-
-# Run tests
-cargo test --workspace --exclude hawk_viewer
-
-# Run with verbose logging
-hawk analyze aws all --profile dev --region us-east-1 --verbose
-
-# Run clippy
-cargo clippy --workspace --exclude hawk_viewer
-
-# Format code
-cargo fmt --all
+cargo check --workspace            # Check compilation
+cargo test --workspace             # Run all tests
+cargo clippy --workspace           # Run clippy
+cargo fmt --all                    # Format code
 ```
 
-### Running Tests Without AWS Credentials
-
-The unit tests don't require AWS credentials — they test ARN parsing, graph operations, Mermaid rendering, and data redaction. Integration tests use fixture JSON files in `examples/`.
-
----
-
-## Security & Data Safety
-
-Hawk is designed to be safe to run against production accounts:
-
-- **Environment variable values are never exported** — only keys are recorded
-- **Secrets, tokens, and auth data are redacted** from all output
-- **No write operations** — Hawk only calls read/list/describe APIs
-- **No data leaves your machine** — output is written to local files only
-- **Inline policy documents are excluded** unless explicitly requested
+Unit tests don't require AWS credentials — they test ARN parsing, graph operations, Mermaid rendering, and data redaction. Integration tests use fixture JSON files in `examples/`.
 
 ---
 
@@ -392,8 +394,6 @@ Hawk is designed to be safe to run against production accounts:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and pull request guidelines.
 
----
-
 ## License
 
-[MIT](LICENSE) — Archith Rapaka
+[MIT](LICENSE) — HumanCTO
