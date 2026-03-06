@@ -618,6 +618,7 @@ const LAYER_COLORS = {
 let cy = null;
 let graphData = null;
 let focusMode = null;   // { nodeId, depth }
+let selectedNodeId = null;  // track last selected node
 let clusterMode = false;
 let hideIsolated = false;
 let currentLayout = 'fcose';
@@ -1033,6 +1034,7 @@ function setupInteractions() {
   // Node click - select
   cy.on('tap', 'node', function(evt) {
     const node = evt.target;
+    selectedNodeId = node.id();
     clearHighlights();
     node.select();
     highlightNeighbors(node);
@@ -1107,6 +1109,7 @@ function highlightNeighbors(node) {
 }
 
 function clearSelection() {
+  selectedNodeId = null;
   cy.elements().unselect();
   clearHighlights();
   exitFocusMode();
@@ -1211,6 +1214,7 @@ function showNodeDetail(d) {
         item.appendChild(createEl('span', { className: 'conn-name' }, srcNode.data('name') || srcNode.id()));
         item.appendChild(createEl('span', { className: 'conn-edge-kind' }, edge.data('kind')));
         item.addEventListener('click', () => {
+          selectedNodeId = srcNode.id();
           cy.elements().unselect();
           srcNode.select();
           clearHighlights();
@@ -1235,6 +1239,7 @@ function showNodeDetail(d) {
         item.appendChild(createEl('span', { className: 'conn-name' }, tgtNode.data('name') || tgtNode.id()));
         item.appendChild(createEl('span', { className: 'conn-edge-kind' }, edge.data('kind')));
         item.addEventListener('click', () => {
+          selectedNodeId = tgtNode.id();
           cy.elements().unselect();
           tgtNode.select();
           clearHighlights();
@@ -1422,6 +1427,7 @@ function performSearch(query) {
     item.appendChild(createEl('span', { className: 'sr-name' }, d.name));
     item.appendChild(createEl('span', { className: 'sr-kind' }, d.kind));
     item.addEventListener('click', () => {
+      selectedNodeId = node.id();
       cy.elements().unselect();
       node.select();
       clearHighlights();
@@ -1520,9 +1526,8 @@ document.querySelectorAll('[data-layout]').forEach(btn => {
 document.querySelectorAll('[data-hop]').forEach(btn => {
   btn.addEventListener('click', () => {
     const depth = parseInt(btn.dataset.hop);
-    const selected = cy ? cy.$(':selected') : null;
-    if (selected && selected.length > 0) {
-      enterFocusMode(selected[0].id(), depth);
+    if (selectedNodeId && cy) {
+      enterFocusMode(selectedNodeId, depth);
     }
   });
 });
@@ -1618,9 +1623,8 @@ document.addEventListener('keydown', (e) => {
       break;
     case '1': case '2': case '3': {
       const depth = parseInt(e.key);
-      const selected = cy ? cy.$(':selected') : null;
-      if (selected && selected.length > 0) {
-        enterFocusMode(selected[0].id(), depth);
+      if (selectedNodeId && cy) {
+        enterFocusMode(selectedNodeId, depth);
       }
       break;
     }
