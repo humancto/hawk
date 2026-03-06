@@ -187,6 +187,63 @@ body { background: var(--bg-deep); color: var(--text-primary); font-family: var(
 /* Kbd hint */
 .kbd { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted); }
 
+/* Risk Assessment */
+.risk-score-circle { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+.risk-low { background: rgba(91,245,163,0.15); color: var(--accent-green); border: 2px solid rgba(91,245,163,0.4); }
+.risk-medium { background: rgba(245,224,91,0.15); color: var(--accent-yellow); border: 2px solid rgba(245,224,91,0.4); }
+.risk-high { background: rgba(245,160,91,0.15); color: var(--accent-orange); border: 2px solid rgba(245,160,91,0.4); }
+.risk-critical { background: rgba(245,91,91,0.15); color: var(--accent-red); border: 2px solid rgba(245,91,91,0.4); }
+.badge-critical { background: rgba(245,91,91,0.15); color: var(--accent-red); border: 1px solid rgba(245,91,91,0.3); }
+.risk-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: var(--radius-sm); transition: background 0.15s; }
+.risk-item:hover { background: var(--bg-hover); }
+.risk-item-info { flex: 1; min-width: 0; }
+.risk-item-name { font-family: var(--font-mono); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.risk-item-detail { font-size: 0.6rem; color: var(--text-muted); }
+.health-gauge { width: 100%; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; margin: 6px 0; }
+.health-gauge-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+.risk-category { margin-bottom: 10px; }
+.risk-category-header { display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.risk-recommendation { padding: 6px 8px; margin-bottom: 4px; border-radius: var(--radius-sm); background: var(--bg-secondary); border-left: 3px solid var(--accent-orange); font-size: 0.7rem; color: var(--text-secondary); line-height: 1.4; }
+.risk-recommendation.critical { border-left-color: var(--accent-red); }
+.risk-recommendation.info { border-left-color: var(--accent-blue); }
+
+/* Blast radius overlay */
+.blast-badge { position: absolute; top: 8px; right: 8px; background: rgba(245,91,91,0.9); color: #fff; padding: 4px 16px; border-radius: 20px; font-family: var(--font-mono); font-size: 0.7rem; z-index: 60; display: none; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(245,91,91,0.3); }
+.blast-badge.visible { display: flex; }
+.blast-badge button { background: rgba(255,255,255,0.2); border: none; color: #fff; cursor: pointer; padding: 2px 6px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem; }
+
+/* What-if mode */
+.whatif-badge { position: absolute; top: 48px; right: 8px; background: rgba(168,123,255,0.9); color: #fff; padding: 4px 16px; border-radius: 20px; font-family: var(--font-mono); font-size: 0.7rem; z-index: 60; display: none; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(168,123,255,0.3); }
+.whatif-badge.visible { display: flex; }
+.whatif-badge button { background: rgba(255,255,255,0.2); border: none; color: #fff; cursor: pointer; padding: 2px 6px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem; }
+
+/* Critical path */
+.critical-path-item { display: flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 0.65rem; padding: 4px 0; color: var(--text-secondary); flex-wrap: wrap; }
+.path-node { background: var(--bg-tertiary); padding: 2px 6px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.path-node:hover { background: var(--bg-hover); color: var(--text-primary); }
+.path-arrow { color: var(--text-muted); flex-shrink: 0; }
+
+/* Pulsing animation for high risk */
+@keyframes riskPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(245,91,91,0); } 50% { box-shadow: 0 0 12px 4px rgba(245,91,91,0.4); } }
+
+/* Export modal */
+#export-modal { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; }
+#export-modal.visible { display: flex; }
+.export-modal-content { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 600px; max-height: 80vh; display: flex; flex-direction: column; }
+.export-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.export-modal-header h3 { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; }
+.export-modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 4px; }
+.export-modal-body { flex: 1; overflow-y: auto; padding: 16px; }
+.export-modal-body pre { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; line-height: 1.6; max-height: 400px; overflow-y: auto; }
+.export-modal-footer { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); justify-content: flex-end; }
+.export-modal-footer button { padding: 6px 16px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; cursor: pointer; border: 1px solid var(--border); }
+.btn-primary { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+.btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); }
+
+/* Severity filter dropdown */
+.severity-select { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); padding: 4px 8px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer; outline: none; }
+.severity-select:focus { border-color: var(--accent-blue); }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -261,6 +318,7 @@ body { background: var(--bg-deep); color: var(--text-primary); font-family: var(
           <span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> Focus depth<br>
           <span class="kbd">C</span> Toggle clusters<br>
           <span class="kbd">I</span> Toggle isolated<br>
+          <span class="kbd">R</span> Toggle risk heatmap<br>
           Right-click for context menu
         </div>
       </div>
@@ -271,6 +329,10 @@ body { background: var(--bg-deep); color: var(--text-primary); font-family: var(
       <div class="focus-badge" id="focus-badge">
         <span id="focus-badge-text">Focus Mode</span>
         <button id="focus-exit">&#10005; Exit</button>
+      </div>
+      <div class="blast-badge" id="blast-badge">
+        <span class="blast-badge-text">Blast Zone</span>
+        <button id="blast-exit">&#10005; Exit</button>
       </div>
       <div id="minimap"><canvas id="minimap-canvas"></canvas></div>
     </div>
@@ -1097,6 +1159,11 @@ document.getElementById('btn-isolate').addEventListener('click', function() {
   if (cy) cy.nodes().forEach(n => { if (n.data('isolated')) n.style('display', hideIsolated ? 'none' : 'element'); });
 });
 document.getElementById('focus-exit').addEventListener('click', () => exitFocusMode());
+document.getElementById('blast-exit').addEventListener('click', () => {
+  clearHighlights();
+  if (cy) cy.nodes().forEach(n => { n.style({ 'background-color': n.data('color'), 'opacity': 1 }); n.removeClass('dimmed'); });
+  document.getElementById('blast-badge').classList.remove('visible');
+});
 document.getElementById('btn-export-png').addEventListener('click', () => {
   if (!cy) return;
   const png = cy.png({ bg: '#0d0f14', full: true, scale: 2 });
@@ -1118,6 +1185,7 @@ document.addEventListener('keydown', e => {
     case '1': case '2': case '3': if (selectedNodeId && cy) enterFocusMode(selectedNodeId, parseInt(e.key)); break;
     case 'c': case 'C': document.getElementById('btn-cluster').click(); break;
     case 'i': case 'I': document.getElementById('btn-isolate').click(); break;
+    case 'r': case 'R': { var rb = document.getElementById('btn-risk-view'); if (rb) rb.click(); } break;
   }
 });
 
@@ -1132,6 +1200,199 @@ document.addEventListener('drop', e => {
     loadFile(e.dataTransfer.files[0]);
   }
 });
+</script>
+<script src="risk-engine.js"></script>
+<script src="risk-assessment.js"></script>
+<script>
+// ===== RISK ASSESSMENT INTEGRATION =====
+// Wire risk engine + UI into the graph viewer after initGraph runs
+
+(function() {
+  var _origInitGraph = window.initGraph;
+  if (typeof _origInitGraph !== 'function') return;
+
+  window.initGraph = function(data) {
+    _origInitGraph(data);
+    setTimeout(function() {
+      if (typeof initRiskAssessment === 'function' && cy && graphData) {
+        initRiskAssessment(cy, graphData);
+      }
+      if (typeof HawkRiskEngine === 'function' && graphData) {
+        window.riskEngine = HawkRiskEngine(graphData.nodes, graphData.edges);
+        patchContextMenuForRisk();
+      }
+    }, 800);
+  };
+
+  function getKindIcon(kind) {
+    var icons = { Lambda:'\u03BB', SqsQueue:'\uD83D\uDCE8', EventRule:'\u26A1', S3Bucket:'\uD83E\uDEA3', SnsTopic:'\uD83D\uDCE2', StepFunction:'\uD83D\uDD04', ApiGateway:'\uD83C\uDF10', ApiRoute:'\uD83C\uDF10', LogGroup:'\uD83D\uDCCB', DynamoStream:'\uD83D\uDDC4\uFE0F' };
+    return icons[kind] || '\u2753';
+  }
+
+  function patchContextMenuForRisk() {
+    if (!cy) return;
+    var _origShowCtx = window.showContextMenu;
+    if (typeof _origShowCtx !== 'function') return;
+
+    window.showContextMenu = function(x, y, node) {
+      _origShowCtx(x, y, node);
+      var menu = document.getElementById('context-menu');
+      if (!menu) return;
+
+      var sep = document.createElement('div');
+      sep.className = 'ctx-sep';
+      menu.appendChild(sep);
+
+      // Blast Radius
+      var blastItem = document.createElement('div');
+      blastItem.className = 'ctx-item';
+      blastItem.textContent = '\uD83D\uDCA5 Show blast radius';
+      blastItem.addEventListener('click', function() { showBlastRadius(node.id()); hideCtxMenu(); });
+      menu.appendChild(blastItem);
+
+      // What-If Remove
+      var whatIfItem = document.createElement('div');
+      whatIfItem.className = 'ctx-item';
+      whatIfItem.textContent = '\u2753 What if this node fails?';
+      whatIfItem.addEventListener('click', function() { showWhatIfForNode(node.id(), node.data()); hideCtxMenu(); });
+      menu.appendChild(whatIfItem);
+
+      // Risk Score inline
+      if (window.riskEngine) {
+        var riskResult = window.riskEngine.computeNodeRisk(node.id());
+        if (riskResult) {
+          var riskItem = document.createElement('div');
+          riskItem.className = 'ctx-item';
+          riskItem.style.pointerEvents = 'none';
+          riskItem.style.fontSize = '0.65rem';
+          riskItem.style.color = riskResult.score >= 70 ? '#f55b5b' : riskResult.score >= 45 ? '#f5a35b' : riskResult.score >= 20 ? '#f5e05b' : '#5bf5a3';
+          riskItem.textContent = 'Risk Score: ' + riskResult.score + '/100 (' + riskResult.tier + ')';
+          menu.appendChild(riskItem);
+        }
+      }
+    };
+  }
+
+  window.showBlastRadius = function(nodeId) {
+    if (!window.riskEngine || !cy) return;
+    var blast = window.riskEngine.blastRadius(nodeId);
+    var node = cy.getElementById(nodeId);
+    if (!node || node.empty()) return;
+
+    var nodeName = node.data('name') || nodeId.split(':').pop();
+
+    clearHighlights();
+    var affectedIds = blast.affected.map(function(a) { return a.id; });
+    affectedIds.push(nodeId);
+
+    cy.nodes().forEach(function(n) {
+      if (affectedIds.indexOf(n.id()) >= 0) {
+        if (n.id() === nodeId) {
+          n.style({ 'background-color': '#f55b5b', 'border-width': 3, 'border-color': '#fff' });
+        } else {
+          var af = blast.affected.find(function(a) { return a.id === n.id(); });
+          var depth = af ? af.depth : 1;
+          var alpha = Math.max(0.3, 1 - (depth * 0.15));
+          n.style({ 'background-color': 'rgba(245,91,91,' + alpha + ')', 'opacity': alpha });
+        }
+      } else {
+        n.addClass('dimmed');
+      }
+    });
+
+    // Update the blast badge (from risk-assessment.js)
+    if (window._blastBadge) {
+      window._blastBadge.classList.add('visible');
+      // Update title
+      var titleEl = window._blastBadge.querySelector('.blast-radius-badge-title');
+      if (titleEl) titleEl.textContent = blast.totalCount > 0 ? 'Blast Zone: ' + nodeName : 'No Downstream Impact: ' + nodeName;
+      // Update subtitle
+      var subEl = window._blastBadge.querySelector('.blast-radius-badge-subtitle');
+      if (subEl) subEl.textContent = blast.totalCount > 0 ? blast.totalCount + ' nodes affected, depth ' + blast.maxDepth : 'This node has no outgoing dependencies to propagate failures';
+      // Update stat values
+      var statValues = window._blastBadge.querySelectorAll('.blast-radius-stat-value');
+      if (statValues.length >= 2) {
+        statValues[0].textContent = String(blast.totalCount);
+        statValues[1].textContent = String(blast.maxDepth);
+      }
+    }
+
+    // Also update fallback badge from index.html
+    var fb = document.getElementById('blast-badge');
+    if (fb) {
+      fb.classList.add('visible');
+      var fbt = fb.querySelector('.blast-badge-text');
+      if (fbt) fbt.textContent = blast.totalCount > 0 ? nodeName + ' \u2014 ' + blast.totalCount + ' affected' : nodeName + ' \u2014 No downstream impact';
+    }
+
+    if (blast.totalCount > 0) {
+      var eles = cy.collection();
+      affectedIds.forEach(function(id) { eles = eles.union(cy.getElementById(id)); });
+      cy.animate({ fit: { eles: eles, padding: 50 } }, { duration: 500 });
+    }
+  };
+
+  window.showWhatIfForNode = function(nodeId, nodeData) {
+    if (!window.riskEngine || !window._whatIfModal) return;
+
+    var result = window.riskEngine.whatIfRemove(nodeId);
+    var health = window.riskEngine.graphHealthScore();
+    var modal = window._whatIfModal;
+
+    var nodeName = nodeData.name || nodeId.split(':').pop();
+    var nodeKind = nodeData.kind || 'Unknown';
+
+    // Update target node info (correct selectors from risk-assessment.js)
+    var nameEl = modal.querySelector('.whatif-target-name');
+    if (nameEl) nameEl.textContent = nodeName;
+
+    var kindEl = modal.querySelector('.whatif-target-kind');
+    if (kindEl) kindEl.textContent = nodeKind;
+
+    // Update target icon
+    var iconEl = modal.querySelector('.whatif-target-icon');
+    if (iconEl) iconEl.textContent = getKindIcon(nodeKind);
+
+    // Update impact grid values
+    var impactEls = modal.querySelectorAll('.whatif-impact-value');
+    if (impactEls.length >= 3) {
+      impactEls[0].textContent = String(result.severityIncrease);
+      impactEls[1].textContent = String(result.disconnectedCount);
+      impactEls[2].textContent = String(result.affectedDownstream);
+    }
+
+    // Update Before/After comparison
+    var beforeEls = modal.querySelectorAll('.whatif-comparison-before');
+    var afterEls = modal.querySelectorAll('.whatif-comparison-after');
+    var totalNodes = graphData ? graphData.nodes.length : 0;
+    var totalEdges = graphData ? graphData.edges.length : 0;
+    var allScoresMap = window.riskEngine.computeAllRiskScores();
+    var totalRisk = 0, scoreCount = 0;
+    allScoresMap.forEach(function(r) { totalRisk += r.score; scoreCount++; });
+    var avgRisk = scoreCount > 0 ? Math.round(totalRisk / scoreCount) : 0;
+
+    // Compute after-removal values
+    var afterNodes = totalNodes - 1;
+    var afterEdges = totalEdges - (result.orphanedEdgeCount || 0);
+    var afterHealth = Math.max(0, health.score - Math.round(result.severityIncrease / 5));
+    var afterRisk = Math.min(100, avgRisk + Math.round(result.disconnectedCount / totalNodes * 20));
+
+    var beforeVals = [totalNodes, totalEdges, health.score, avgRisk];
+    var afterVals = [afterNodes, afterEdges, afterHealth, afterRisk];
+
+    for (var i = 0; i < Math.min(beforeEls.length, 4); i++) {
+      beforeEls[i].textContent = String(beforeVals[i]);
+      afterEls[i].textContent = String(afterVals[i]);
+      // Update color class
+      afterEls[i].className = 'whatif-comparison-after';
+      if (afterVals[i] < beforeVals[i]) afterEls[i].classList.add('val-worse');
+      else if (afterVals[i] > beforeVals[i]) afterEls[i].classList.add('val-better');
+      else afterEls[i].classList.add('val-same');
+    }
+
+    modal.classList.add('visible');
+  };
+})();
 </script>
 </body>
 </html>
