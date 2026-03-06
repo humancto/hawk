@@ -38,14 +38,15 @@ Point it at an AWS account, get a complete picture of what triggers what.
 
 ## Features
 
-| Feature                  | Description                                              |
-| ------------------------ | -------------------------------------------------------- |
-| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity             |
-| **Deterministic output** | Sorted, deduped JSON for stable diffs                    |
-| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer      |
-| **Snapshot diffing**     | Compare two scans to see what changed                    |
-| **Interactive viewer**   | Bevy 2D app with force layout, pan/zoom, search, filters |
-| **Security-conscious**   | Env var values, secrets, and tokens are never exported   |
+| Feature                  | Description                                                        |
+| ------------------------ | ------------------------------------------------------------------ |
+| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity                       |
+| **Deterministic output** | Sorted, deduped JSON for stable diffs                              |
+| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer                |
+| **Snapshot diffing**     | Compare two scans to see what changed                              |
+| **Web viewer**           | Cytoscape.js app with force layout, search, focus mode, clustering |
+| **Native viewer**        | Bevy 2D app with force layout, pan/zoom, search, filters           |
+| **Security-conscious**   | Env var values, secrets, and tokens are never exported             |
 
 ---
 
@@ -104,7 +105,21 @@ hawk export mermaid --in hawk.json --out hawk.mmd --full
 hawk diff --old baseline.json --new current.json
 ```
 
-### Launch the Interactive Viewer
+### Launch the Web Viewer
+
+```bash
+# Copy your scan output alongside the viewer
+cp hawk.json apps/hawk_web/hawk.json
+
+# Open in your browser
+open apps/hawk_web/index.html
+# Or serve it
+cd apps/hawk_web && python3 -m http.server 8080
+```
+
+The web viewer features force-directed layout, search, layer toggles, focus mode, clustering, minimap, and handles 1000+ nodes smoothly. You can also drag-and-drop any `hawk.json` file onto the page.
+
+### Launch the Native Viewer (Bevy)
 
 ```bash
 cargo run --release -p hawk_viewer -- hawk.json
@@ -274,9 +289,39 @@ Output JSON follows a stable, documented schema:
 
 ---
 
-## Interactive Viewer
+## Web Viewer (Recommended)
 
-The Bevy-based viewer renders the graph as an interactive 2D node-and-edge map with force-directed layout.
+The web-based viewer uses Cytoscape.js to render the graph as an interactive force-directed map. It handles 1000+ nodes smoothly and requires no build step — just open the HTML file.
+
+```bash
+open apps/hawk_web/index.html
+```
+
+**Features:**
+
+- **Force-directed, hierarchical, and circular layouts** — switch between them in the toolbar
+- **Search with autocomplete** — type to find nodes, results highlight in the graph
+- **Focus mode** — click a node then press 1/2/3 to show only its N-hop neighborhood
+- **Cluster grouping** — auto-group nodes by service type
+- **Layer toggles** — show/hide Compute, Events, Storage, Orchestration layers
+- **Isolated node filter** — hide orphan nodes with zero connections
+- **Edge bundling** — duplicate edges collapsed with count badges
+- **Minimap** — overview with viewport indicator
+- **Node detail panel** — ARN, region, properties, clickable connection list
+- **Export to PNG** — full-resolution graph export
+- **Drag-and-drop** — drop any hawk.json file onto the page
+- **Keyboard shortcuts** — Esc, F (fit), / (search), 1-3 (focus), C (cluster), I (isolate)
+
+**UI panels:**
+
+- **Left panel** — search, layer toggles, stats bars, keyboard shortcuts
+- **Right panel** — selected node details (name, kind, ARN, region, connections, properties)
+- **Top toolbar** — layout selector, focus depth, cluster toggle, export
+- **Bottom bar** — node/edge counts, zoom level
+
+## Native Viewer (Bevy)
+
+The Bevy-based viewer renders the graph as a native 2D application with force-directed layout.
 
 | Action      | Input            |
 | ----------- | ---------------- |
@@ -286,15 +331,10 @@ The Bevy-based viewer renders the graph as an interactive 2D node-and-edge map w
 
 **Features:**
 
-- **Force-directed layout** — nodes are positioned using physics simulation with band constraints
-- **Node icons** — each node displays a service type label (fn, Q, S3, EB, SNS, SF, API, CW, DB)
+- **Force-directed layout** — physics simulation with band constraints
+- **Node icons** — service type labels (fn, Q, S3, EB, SNS, SF, API, CW, DB)
 - **Directional edges** — arrows show trigger/invocation direction
-- **Connection details** — selected nodes show incoming/outgoing edges with source/target names
-
-**UI panels:**
-
-- **Left panel** — search bar, layer toggles, stats, color legend, controls reference
-- **Right panel** — selected node details (name, kind, ARN, region, connections, properties)
+- **Connection details** — selected nodes show incoming/outgoing edges
 
 | Layer         | Node Kinds                                                                |
 | ------------- | ------------------------------------------------------------------------- |
@@ -367,7 +407,8 @@ hawk/
 │   ├── hawk-cloud/               # CLI binary (clap-based)
 │   └── hawk_render/            # Mermaid renderer
 ├── apps/
-│   └── hawk_viewer/            # Bevy 2D interactive viewer
+│   ├── hawk_web/               # Web-based graph viewer (Cytoscape.js)
+│   └── hawk_viewer/            # Native Bevy 2D viewer
 └── examples/
     └── sample_graph.json       # Example output for testing
 ```
