@@ -13,13 +13,21 @@
 .DS_Store
 Thumbs.db
 
-# Hawk output
+# Hawk scan output — NEVER commit real AWS data
 hawk.json
-hawk.mmd
+hawk-output.*
 *.mmd
 *.dot
+
+# Web viewer local data (may contain real scan data)
+apps/hawk_web/hawk.json
+
+# Watch mode snapshot directory
+snapshots/
 
 # Environment / secrets
 .env
 .env.*
 credentials.json
+*.pem
+*.key
