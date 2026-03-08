@@ -8,11 +8,7 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
     let region = ctx.region_str();
 
     // --- List all Lambda functions (paginated) ---
-    let mut paginator = ctx
-        .lambda
-        .list_functions()
-        .into_paginator()
-        .send();
+    let mut paginator = ctx.lambda.list_functions().into_paginator().send();
 
     let mut functions = Vec::new();
     while let Some(page) = paginator.next().await {
@@ -23,13 +19,19 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
                 }
             }
             Err(e) => {
-                output.warnings.push(format!("Lambda ListFunctions error: {e}"));
+                output
+                    .warnings
+                    .push(format!("Lambda ListFunctions error: {e}"));
                 return Ok(output);
             }
         }
     }
 
-    info!("Discovered {} Lambda functions in {}", functions.len(), region);
+    info!(
+        "Discovered {} Lambda functions in {}",
+        functions.len(),
+        region
+    );
 
     for func in &functions {
         let arn = func.function_arn().unwrap_or_default().to_string();
@@ -126,7 +128,9 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
             }
             Err(e) => {
                 warn!("ListEventSourceMappings error: {e}");
-                output.warnings.push(format!("ListEventSourceMappings error: {e}"));
+                output
+                    .warnings
+                    .push(format!("ListEventSourceMappings error: {e}"));
             }
         }
     }

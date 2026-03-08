@@ -26,7 +26,11 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
         }
     }
 
-    info!("Discovered {} CloudWatch log groups in {}", log_groups.len(), region);
+    info!(
+        "Discovered {} CloudWatch log groups in {}",
+        log_groups.len(),
+        region
+    );
 
     for group in &log_groups {
         let group_name = match group.log_group_name() {
@@ -45,9 +49,9 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
             Ok(resp) => resp.subscription_filters.unwrap_or_default(),
             Err(e) => {
                 warn!("DescribeSubscriptionFilters({group_name}) error: {e}");
-                output
-                    .warnings
-                    .push(format!("DescribeSubscriptionFilters({group_name}) error: {e}"));
+                output.warnings.push(format!(
+                    "DescribeSubscriptionFilters({group_name}) error: {e}"
+                ));
                 continue;
             }
         };

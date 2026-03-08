@@ -38,10 +38,7 @@ pub fn resource_kind_from_arn(arn: &str) -> hawk_core::NodeKind {
 
 /// Extract a short name from an ARN (last segment after : or /).
 pub fn name_from_arn(arn: &str) -> String {
-    arn.rsplit([':', '/'])
-        .next()
-        .unwrap_or(arn)
-        .to_string()
+    arn.rsplit([':', '/']).next().unwrap_or(arn).to_string()
 }
 
 /// Extract account ID from an ARN (field index 4).
@@ -72,7 +69,10 @@ mod tests {
     fn test_extract_lambda_arns() {
         let text = r#"{"Resource": "arn:aws:lambda:us-east-1:123456789012:function:MyFunc"}"#;
         let arns = extract_lambda_arns(text);
-        assert_eq!(arns, vec!["arn:aws:lambda:us-east-1:123456789012:function:MyFunc"]);
+        assert_eq!(
+            arns,
+            vec!["arn:aws:lambda:us-east-1:123456789012:function:MyFunc"]
+        );
     }
 
     #[test]

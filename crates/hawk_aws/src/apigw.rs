@@ -11,14 +11,16 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
     let apis = match ctx.apigwv2.get_apis().send().await {
         Ok(resp) => resp.items.unwrap_or_default(),
         Err(e) => {
-            output
-                .warnings
-                .push(format!("APIGWv2 GetApis error: {e}"));
+            output.warnings.push(format!("APIGWv2 GetApis error: {e}"));
             return Ok(output);
         }
     };
 
-    info!("Discovered {} API Gateway v2 APIs in {}", apis.len(), region);
+    info!(
+        "Discovered {} API Gateway v2 APIs in {}",
+        apis.len(),
+        region
+    );
 
     for api in &apis {
         let api_id = match api.api_id() {
@@ -42,13 +44,7 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
         });
 
         // Get integrations for this API
-        let integrations = match ctx
-            .apigwv2
-            .get_integrations()
-            .api_id(&api_id)
-            .send()
-            .await
-        {
+        let integrations = match ctx.apigwv2.get_integrations().api_id(&api_id).send().await {
             Ok(resp) => resp.items.unwrap_or_default(),
             Err(e) => {
                 warn!("GetIntegrations({api_id}) error: {e}");

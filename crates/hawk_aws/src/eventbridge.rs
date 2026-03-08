@@ -25,7 +25,9 @@ pub async fn discover(ctx: &AwsCtx) -> anyhow::Result<DiscoveryOutput> {
                 }
             }
             Err(e) => {
-                output.warnings.push(format!("EventBridge ListRules error: {e}"));
+                output
+                    .warnings
+                    .push(format!("EventBridge ListRules error: {e}"));
                 return Ok(output);
             }
         }

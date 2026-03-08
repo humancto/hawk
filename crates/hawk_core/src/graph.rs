@@ -150,9 +150,8 @@ impl Graph {
 
         // Dedupe edges by (from, to, kind)
         let mut seen_edges = std::collections::HashSet::new();
-        self.edges.retain(|e| {
-            seen_edges.insert((e.from.clone(), e.to.clone(), format!("{:?}", e.kind)))
-        });
+        self.edges
+            .retain(|e| seen_edges.insert((e.from.clone(), e.to.clone(), format!("{:?}", e.kind))));
 
         // Sort nodes by kind, then name, then id
         self.nodes.sort_by(|a, b| {
@@ -279,14 +278,9 @@ impl GraphDiff {
         let new_edge_keys: std::collections::HashSet<String> =
             new.edges.iter().map(edge_key).collect();
 
-        let added_edges: Vec<String> = new_edge_keys
-            .difference(&old_edge_keys)
-            .cloned()
-            .collect();
-        let removed_edges: Vec<String> = old_edge_keys
-            .difference(&new_edge_keys)
-            .cloned()
-            .collect();
+        let added_edges: Vec<String> = new_edge_keys.difference(&old_edge_keys).cloned().collect();
+        let removed_edges: Vec<String> =
+            old_edge_keys.difference(&new_edge_keys).cloned().collect();
 
         GraphDiff {
             added_nodes,

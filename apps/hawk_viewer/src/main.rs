@@ -319,9 +319,7 @@ fn compute_layout(graph: &Graph) -> HashMap<String, Vec2> {
 
         // Attraction along edges
         for edge in &graph.edges {
-            if let (Some(&pa), Some(&pb)) =
-                (positions.get(&edge.from), positions.get(&edge.to))
-            {
+            if let (Some(&pa), Some(&pb)) = (positions.get(&edge.from), positions.get(&edge.to)) {
                 let diff = pb - pa;
                 let force = diff * attraction;
                 if let Some(f) = forces.get_mut(edge.from.as_str()) {
@@ -350,8 +348,7 @@ fn compute_layout(graph: &Graph) -> HashMap<String, Vec2> {
         for id in &node_ids {
             if let Some(pos) = positions.get_mut(id) {
                 let force = forces.get(id.as_str()).copied().unwrap_or(Vec2::ZERO);
-                let clamped =
-                    Vec2::new(force.x.clamp(-50.0, 50.0), force.y.clamp(-50.0, 50.0));
+                let clamped = Vec2::new(force.x.clamp(-50.0, 50.0), force.y.clamp(-50.0, 50.0));
                 *pos += clamped * damping;
             }
         }
@@ -521,10 +518,7 @@ fn ui_system(mut contexts: EguiContexts, mut state: ResMut<ViewerState>, hawk: R
             ui.separator();
             ui.label("Layers:");
             ui.checkbox(&mut state.layers.compute, "Compute (Lambda, ECS, EC2)");
-            ui.checkbox(
-                &mut state.layers.event,
-                "Events (EB, API, SNS, SQS, Logs)",
-            );
+            ui.checkbox(&mut state.layers.event, "Events (EB, API, SNS, SQS, Logs)");
             ui.checkbox(&mut state.layers.storage, "Storage (S3, DynamoDB)");
             ui.checkbox(
                 &mut state.layers.orchestration,
@@ -626,8 +620,7 @@ fn ui_system(mut contexts: EguiContexts, mut state: ResMut<ViewerState>, hawk: R
 
                     ui.separator();
                     ui.label("Properties:");
-                    let props_str =
-                        serde_json::to_string_pretty(&node.props).unwrap_or_default();
+                    let props_str = serde_json::to_string_pretty(&node.props).unwrap_or_default();
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         ui.monospace(&props_str);
                     });
@@ -641,11 +634,8 @@ fn ui_system(mut contexts: EguiContexts, mut state: ResMut<ViewerState>, hawk: R
 fn legend_entry(ui: &mut egui::Ui, label: &str, rgb: [u8; 3]) {
     ui.horizontal(|ui| {
         let (rect, _) = ui.allocate_exact_size(egui::vec2(12.0, 12.0), egui::Sense::hover());
-        ui.painter().rect_filled(
-            rect,
-            2.0,
-            egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]),
-        );
+        ui.painter()
+            .rect_filled(rect, 2.0, egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]));
         ui.label(label);
     });
 }

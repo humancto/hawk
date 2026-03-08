@@ -79,7 +79,8 @@ impl Default for DotOptions {
 
 /// Render a Graph as a Graphviz DOT string.
 pub fn render_dot(graph: &Graph, opts: &DotOptions) -> String {
-    let mut out = String::from("digraph hawk {\n    rankdir=LR;\n    node [shape=box, style=filled];\n\n");
+    let mut out =
+        String::from("digraph hawk {\n    rankdir=LR;\n    node [shape=box, style=filled];\n\n");
 
     let nodes = filter_nodes(graph, opts.full);
     let node_ids: std::collections::HashSet<&str> = nodes.iter().map(|n| n.id.as_str()).collect();
@@ -170,9 +171,7 @@ fn filter_nodes(graph: &Graph, full: bool) -> Vec<&hawk_core::Node> {
     }
 }
 
-fn group_nodes<'a>(
-    nodes: &[&'a hawk_core::Node],
-) -> Vec<(String, Vec<&'a hawk_core::Node>)> {
+fn group_nodes<'a>(nodes: &[&'a hawk_core::Node]) -> Vec<(String, Vec<&'a hawk_core::Node>)> {
     use std::collections::BTreeMap;
 
     let mut map: BTreeMap<String, Vec<&hawk_core::Node>> = BTreeMap::new();
@@ -207,7 +206,9 @@ fn sanitize_id(id: &str) -> String {
 }
 
 fn escape_mermaid(s: &str) -> String {
-    s.replace('"', "'").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('"', "'")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 fn truncate_label(s: &str, max_len: usize) -> String {
@@ -257,7 +258,13 @@ mod tests {
     #[test]
     fn test_render_mermaid_basic() {
         let g = sample_graph();
-        let result = render_mermaid(&g, &MermaidOptions { full: true, ..Default::default() });
+        let result = render_mermaid(
+            &g,
+            &MermaidOptions {
+                full: true,
+                ..Default::default()
+            },
+        );
         assert!(result.contains("flowchart LR"));
         assert!(result.contains("fn1"));
         assert!(result.contains("queue1"));
@@ -285,7 +292,13 @@ mod tests {
     #[test]
     fn test_render_dot_basic() {
         let g = sample_graph();
-        let result = render_dot(&g, &DotOptions { full: true, ..Default::default() });
+        let result = render_dot(
+            &g,
+            &DotOptions {
+                full: true,
+                ..Default::default()
+            },
+        );
         assert!(result.contains("digraph hawk"));
         assert!(result.contains("fn1"));
         assert!(result.contains("queue1"));
@@ -296,8 +309,20 @@ mod tests {
     #[test]
     fn test_render_dot_deterministic() {
         let g = sample_graph();
-        let r1 = render_dot(&g, &DotOptions { full: true, ..Default::default() });
-        let r2 = render_dot(&g, &DotOptions { full: true, ..Default::default() });
+        let r1 = render_dot(
+            &g,
+            &DotOptions {
+                full: true,
+                ..Default::default()
+            },
+        );
+        let r2 = render_dot(
+            &g,
+            &DotOptions {
+                full: true,
+                ..Default::default()
+            },
+        );
         assert_eq!(r1, r2);
     }
 }

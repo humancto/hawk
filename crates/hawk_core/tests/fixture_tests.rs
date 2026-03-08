@@ -27,9 +27,21 @@ fn test_fixture_loads_correctly() {
 #[test]
 fn test_fixture_node_kinds() {
     let graph = load_fixture();
-    let lambda_count = graph.nodes.iter().filter(|n| n.kind == NodeKind::Lambda).count();
-    let sqs_count = graph.nodes.iter().filter(|n| n.kind == NodeKind::SqsQueue).count();
-    let event_count = graph.nodes.iter().filter(|n| n.kind == NodeKind::EventRule).count();
+    let lambda_count = graph
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::Lambda)
+        .count();
+    let sqs_count = graph
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::SqsQueue)
+        .count();
+    let event_count = graph
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::EventRule)
+        .count();
     assert_eq!(lambda_count, 5);
     assert_eq!(sqs_count, 2);
     assert_eq!(event_count, 2);

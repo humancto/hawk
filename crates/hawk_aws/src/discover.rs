@@ -63,7 +63,9 @@ pub async fn discover_all(
 
     info!(
         "Discovery complete: {} nodes, {} edges, {} warnings",
-        graph.stats.node_count, graph.stats.edge_count, graph.warnings.len()
+        graph.stats.node_count,
+        graph.stats.edge_count,
+        graph.warnings.len()
     );
 
     Ok(graph)
