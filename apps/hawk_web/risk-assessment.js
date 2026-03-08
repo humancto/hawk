@@ -1505,7 +1505,7 @@ function buildAssessmentTab(options) {
     isolatedNodes = 0,
     topRisks = [],
     recommendations = { critical: [], high: [], medium: [] },
-    onNodeClick = function () {},
+    onNodeClick = function () { },
   } = options;
 
   const container = document.createElement("div");
@@ -1665,7 +1665,7 @@ function buildHealthGaugeSection(options) {
  */
 function buildTopRisksSection(options) {
   var risks = options.risks || [];
-  var onNodeClick = options.onNodeClick || function () {};
+  var onNodeClick = options.onNodeClick || function () { };
 
   var section = document.createElement("div");
   section.className = "sidebar-section";
@@ -1765,7 +1765,7 @@ function buildTopRisksSection(options) {
  */
 function buildRecommendationsSection(options) {
   var recs = options.recommendations || { critical: [], high: [], medium: [] };
-  var onNodeClick = options.onNodeClick || function () {};
+  var onNodeClick = options.onNodeClick || function () { };
 
   var section = document.createElement("div");
   section.className = "sidebar-section recommendations-section";
@@ -1939,9 +1939,9 @@ function buildRecommendationsSection(options) {
  * @returns {HTMLElement} - a toolbar-group div to insert into the toolbar
  */
 function buildRiskToolbarControls(options) {
-  var onRiskViewToggle = options.onRiskViewToggle || function () {};
-  var onSeverityFilter = options.onSeverityFilter || function () {};
-  var onBlastRadiusToggle = options.onBlastRadiusToggle || function () {};
+  var onRiskViewToggle = options.onRiskViewToggle || function () { };
+  var onSeverityFilter = options.onSeverityFilter || function () { };
+  var onBlastRadiusToggle = options.onBlastRadiusToggle || function () { };
 
   var group = document.createElement("div");
   group.className = "toolbar-risk-group";
@@ -2046,7 +2046,7 @@ function buildBlastRadiusBadge(options) {
   var affectedCount = options.affectedCount || 0;
   var depth = options.depth || 0;
   var sourceNodeName = options.sourceNodeName || "Unknown";
-  var onClose = options.onClose || function () {};
+  var onClose = options.onClose || function () { };
 
   var badge = document.createElement("div");
   badge.className = "blast-radius-badge";
@@ -2158,8 +2158,8 @@ function buildWhatIfModal(options) {
     healthScore: 0,
     avgRisk: 0,
   };
-  var onConfirm = options.onConfirm || function () {};
-  var onCancel = options.onCancel || function () {};
+  var onConfirm = options.onConfirm || function () { };
+  var onCancel = options.onCancel || function () { };
 
   // Overlay
   var overlay = document.createElement("div");
@@ -2456,7 +2456,7 @@ function buildWhatIfModal(options) {
 function buildExportReportModal(options) {
   var markdownContent = options.markdownContent || "";
   var filename = options.filename || "hawk-risk-report.md";
-  var onClose = options.onClose || function () {};
+  var onClose = options.onClose || function () { };
 
   // Overlay
   var overlay = document.createElement("div");
@@ -2821,8 +2821,8 @@ function initRiskAssessment(cyInstance, graphData) {
     },
     before: { nodes: 0, edges: 0, healthScore: 0, avgRisk: 0 },
     after: { nodes: 0, edges: 0, healthScore: 0, avgRisk: 0 },
-    onConfirm: function () {},
-    onCancel: function () {},
+    onConfirm: function () { },
+    onCancel: function () { },
   });
   document.body.appendChild(whatIfModal);
   window._whatIfModal = whatIfModal;
@@ -2831,18 +2831,41 @@ function initRiskAssessment(cyInstance, graphData) {
   var exportModal = buildExportReportModal({
     markdownContent: generateRiskReport(riskData, graphData),
     filename: "hawk-risk-report.md",
-    onClose: function () {},
+    onClose: function () { },
   });
   document.body.appendChild(exportModal);
   window._exportReportModal = exportModal;
 
   // --- 6. Bottom bar ---
+  // Use the authoritative HawkRiskEngine health score when available,
+  // since it does deeper analysis (articulation points, DLQ, graph connectivity).
+  var displayHealthScore = riskData.healthScore;
+  var displaySeverity = riskData.severityCounts;
+  if (typeof HawkRiskEngine === "function") {
+    try {
+      var fullEngine = HawkRiskEngine(graphData.nodes, graphData.edges);
+      var engineHealth = fullEngine.graphHealthScore();
+      if (engineHealth && typeof engineHealth.score === "number") {
+        displayHealthScore = engineHealth.score;
+      }
+      // Recompute severity counts from the full engine
+      var allScores = fullEngine.computeAllRiskScores();
+      var fullSeverity = { critical: 0, high: 0, medium: 0, low: 0 };
+      allScores.forEach(function (r) {
+        if (r.score >= 70) fullSeverity.critical++;
+        else if (r.score >= 45) fullSeverity.high++;
+        else if (r.score >= 20) fullSeverity.medium++;
+        else fullSeverity.low++;
+      });
+      displaySeverity = fullSeverity;
+    } catch (e) { /* fall back to simple metrics */ }
+  }
   var bottombar = document.getElementById("bottombar");
   var bottomBarSection = buildAssessmentBottomBar({
-    healthScore: riskData.healthScore,
-    criticalCount: riskData.severityCounts.critical,
-    highCount: riskData.severityCounts.high,
-    mediumCount: riskData.severityCounts.medium,
+    healthScore: displayHealthScore,
+    criticalCount: displaySeverity.critical,
+    highCount: displaySeverity.high,
+    mediumCount: displaySeverity.medium,
   });
   if (bottombar) {
     var bottomSpacer = bottombar.querySelector(".bottom-spacer");
@@ -2887,9 +2910,16 @@ function addAssessmentTabToPanel(nodeData, riskData, cyInstance) {
 
   tabBar.appendChild(assessBtn);
 
-  // Build assessment content
+  // Use full engine health if available (from the window.riskEngine initialized earlier)
+  var tabHealthScore = riskData.healthScore;
+  if (window.riskEngine && typeof window.riskEngine.graphHealthScore === 'function') {
+    try {
+      var ehResult = window.riskEngine.graphHealthScore();
+      if (ehResult && typeof ehResult.score === 'number') tabHealthScore = ehResult.score;
+    } catch (e) { /* fall back */ }
+  }
   var assessContent = buildAssessmentTab({
-    healthScore: riskData.healthScore,
+    healthScore: tabHealthScore,
     spofsCount: riskData.spofsCount,
     criticalPaths: riskData.criticalPaths,
     avgRisk: riskData.avgRisk,
@@ -3201,10 +3231,10 @@ function generateRiskReport(riskData, graphData) {
   lines.push("");
   lines.push(
     "- Overall Health Score: **" +
-      riskData.healthScore +
-      "/100** (" +
-      gaugeSeverityText(riskData.healthScore) +
-      ")",
+    riskData.healthScore +
+    "/100** (" +
+    gaugeSeverityText(riskData.healthScore) +
+    ")",
   );
   lines.push("- Single Points of Failure: **" + riskData.spofsCount + "**");
   lines.push("- Critical Paths: **" + riskData.criticalPaths + "**");
