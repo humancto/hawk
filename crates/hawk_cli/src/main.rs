@@ -45,6 +45,12 @@ enum Commands {
         #[arg(long)]
         exit_code: bool,
     },
+    /// Validate a hawk.json file for schema correctness
+    Validate {
+        /// Input hawk.json file
+        #[arg(long, default_value = "hawk.json")]
+        r#in: PathBuf,
+    },
     /// Watch for infrastructure changes by re-scanning periodically
     Watch {
         #[command(subcommand)]
@@ -305,6 +311,49 @@ async fn main() -> Result<()> {
 
             if exit_code && has_changes {
                 std::process::exit(1);
+            }
+        }
+
+        Commands::Validate { r#in: input } => {
+            let data = std::fs::read_to_string(&input)?;
+            let graph: hawk_core::Graph = match serde_json::from_str(&data) {
+                Ok(g) => g,
+                Err(e) => {
+                    eprintln!("\x1b[31m✗ Failed to parse {}: {e}\x1b[0m", input.display());
+                    std::process::exit(1);
+                }
+            };
+
+            let result = hawk_core::validate::validate_graph(&graph);
+
+            println!("=== Hawk Validate ===\n");
+            println!("File:  {}", input.display());
+            println!("Nodes: {}", graph.nodes.len());
+            println!("Edges: {}", graph.edges.len());
+            println!();
+
+            if result.errors.is_empty() && result.warnings.is_empty() {
+                println!("\x1b[32m✓ Valid — no issues found\x1b[0m");
+            } else {
+                for e in &result.errors {
+                    eprintln!("\x1b[31m  ✗ ERROR: {e}\x1b[0m");
+                }
+                for w in &result.warnings {
+                    println!("\x1b[33m  ⚠ WARN:  {w}\x1b[0m");
+                }
+                println!();
+                if !result.is_valid() {
+                    eprintln!(
+                        "\x1b[31m✗ Validation failed with {} error(s)\x1b[0m",
+                        result.errors.len()
+                    );
+                    std::process::exit(1);
+                } else {
+                    println!(
+                        "\x1b[32m✓ Valid\x1b[0m with {} warning(s)",
+                        result.warnings.len()
+                    );
+                }
             }
         }
 
