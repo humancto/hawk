@@ -1676,20 +1676,110 @@
 
     // ===== DEMO DATA =====
     function generateDemoData() {
-      const lambdas = ['order-processor', 'payment-handler', 'notification-sender', 'user-auth', 'image-resizer', 'data-sync', 'report-generator', 'email-worker', 'api-handler', 'audit-logger'];
-      const queues = ['orders-queue', 'payments-queue', 'notifications-queue', 'sync-queue'];
-      const topics = ['order-events', 'user-events', 'system-alerts'];
-      const rules = ['daily-cleanup', 'hourly-sync', 'order-placed', 'user-signup'];
-      const buckets = ['media-uploads', 'reports-output', 'data-lake'];
-      const steps = ['order-fulfillment-flow', 'user-onboarding'];
       const nodes = [], edges = [], acct = '123456789012', reg = 'us-east-1';
-      lambdas.forEach(n => { nodes.push({ id: 'arn:aws:lambda:' + reg + ':' + acct + ':function:' + n, kind: 'Lambda', name: n, region: reg, account_id: acct, props: { runtime: 'nodejs20.x', memory_size: 256, timeout: 30 } }); });
-      queues.forEach(n => { const a = 'arn:aws:sqs:' + reg + ':' + acct + ':' + n; nodes.push({ id: a, kind: 'SqsQueue', name: n, region: reg, account_id: acct, props: {} }); edges.push({ from: a, to: nodes[Math.floor(Math.random() * lambdas.length)].id, kind: 'Triggers', props: { batch_size: 10 } }); });
-      topics.forEach(n => { const a = 'arn:aws:sns:' + reg + ':' + acct + ':' + n; nodes.push({ id: a, kind: 'SnsTopic', name: n, region: reg, account_id: acct, props: {} }); edges.push({ from: a, to: nodes[Math.floor(Math.random() * lambdas.length)].id, kind: 'Triggers', props: {} }); });
-      rules.forEach(n => { const a = 'arn:aws:events:' + reg + ':' + acct + ':rule/' + n; nodes.push({ id: a, kind: 'EventRule', name: n, region: reg, account_id: acct, props: {} }); edges.push({ from: a, to: nodes[Math.floor(Math.random() * lambdas.length)].id, kind: 'Triggers', props: {} }); });
-      buckets.forEach(n => { const a = 'arn:aws:s3:::' + n; nodes.push({ id: a, kind: 'S3Bucket', name: n, region: reg, account_id: acct, props: {} }); edges.push({ from: a, to: nodes[Math.floor(Math.random() * lambdas.length)].id, kind: 'Triggers', props: {} }); });
-      steps.forEach(n => { const a = 'arn:aws:states:' + reg + ':' + acct + ':stateMachine:' + n; nodes.push({ id: a, kind: 'StepFunction', name: n, region: reg, account_id: acct, props: {} }); edges.push({ from: a, to: nodes[0].id, kind: 'Invokes', props: {} }); edges.push({ from: a, to: nodes[1].id, kind: 'Invokes', props: {} }); });
-      for (let i = 0; i < 8; i++) { const a = Math.floor(Math.random() * lambdas.length), b = Math.floor(Math.random() * lambdas.length); if (a !== b) edges.push({ from: nodes[a].id, to: nodes[b].id, kind: 'Invokes', props: {} }); }
+      const mk = (kind, name, props) => {
+        const prefixes = { Lambda: 'arn:aws:lambda:' + reg + ':' + acct + ':function:', SqsQueue: 'arn:aws:sqs:' + reg + ':' + acct + ':', SnsTopic: 'arn:aws:sns:' + reg + ':' + acct + ':', EventRule: 'arn:aws:events:' + reg + ':' + acct + ':rule/', S3Bucket: 'arn:aws:s3:::', StepFunction: 'arn:aws:states:' + reg + ':' + acct + ':stateMachine:', ApiGateway: 'arn:aws:apigateway:' + reg + '::/', ApiRoute: 'arn:aws:apigateway:' + reg + '::/apis/route/' };
+        const id = (prefixes[kind] || 'arn:aws:unknown:' + reg + ':' + acct + ':') + name;
+        nodes.push({ id, kind, name, region: reg, account_id: acct, props: props || {} });
+        return id;
+      };
+      const link = (from, to, kind) => edges.push({ from, to, kind: kind || 'Triggers', props: {} });
+
+      // === Core services (the real architecture) ===
+      const apiGw = mk('ApiGateway', 'main-api', {});
+      const routeOrders = mk('ApiRoute', 'POST /orders', {});
+      const routeUsers = mk('ApiRoute', 'GET /users', {});
+      const routePayments = mk('ApiRoute', 'POST /payments', {});
+      link(apiGw, routeOrders); link(apiGw, routeUsers); link(apiGw, routePayments);
+
+      // Hub node — will trigger WTF badge (25+ connections)
+      const commonLib = mk('Lambda', 'common-http-handler', { runtime: 'nodejs20.x', memory_size: 512, timeout: 30 });
+
+      // Main lambdas with varied runtimes
+      const orderProc = mk('Lambda', 'order-processor', { runtime: 'nodejs20.x', memory_size: 256, timeout: 60 });
+      const paymentProc = mk('Lambda', 'payment-handler', { runtime: 'nodejs20.x', memory_size: 512, timeout: 120 });
+      const notifier = mk('Lambda', 'notification-sender', { runtime: 'python3.12', memory_size: 128, timeout: 15 });
+      const userAuth = mk('Lambda', 'user-auth', { runtime: 'nodejs20.x', memory_size: 256, timeout: 10 });
+      const imgResize = mk('Lambda', 'image-resizer', { runtime: 'nodejs20.x', memory_size: 1024, timeout: 300 });
+      const dataSync = mk('Lambda', 'data-sync', { runtime: 'python3.12', memory_size: 256, timeout: 60 });
+      const reportGen = mk('Lambda', 'report-generator', { runtime: 'nodejs20.x', memory_size: 512, timeout: 900 });
+      const emailWorker = mk('Lambda', 'email-worker', { runtime: 'python3.12', memory_size: 128, timeout: 30 });
+      const auditLog = mk('Lambda', 'audit-logger', { runtime: 'nodejs20.x', memory_size: 128, timeout: 10 });
+      const apiHandler = mk('Lambda', 'api-handler', { runtime: 'nodejs20.x', memory_size: 256, timeout: 30 });
+
+      // Deprecated runtime lambdas — trigger Fossil badge
+      const legacyIngest = mk('Lambda', 'legacy-data-ingest', { runtime: 'nodejs12.x', memory_size: 256, timeout: 60 });
+      const oldProcessor = mk('Lambda', 'old-event-processor', { runtime: 'nodejs6.10', memory_size: 512, timeout: 300 });
+      const pyLegacy = mk('Lambda', 'python2-cleanup', { runtime: 'python2.7', memory_size: 128, timeout: 30 });
+
+      // Heavy lambdas — trigger Heavy Lifter badge
+      const heavyETL = mk('Lambda', 'etl-mega-processor', { runtime: 'java11', memory_size: 3008, timeout: 900 });
+      const dataLoader = mk('Lambda', 'data-warehouse-loader', { runtime: 'python3.12', memory_size: 2048, timeout: 600 });
+
+      // API routes -> lambdas
+      link(routeOrders, orderProc); link(routeUsers, userAuth); link(routePayments, paymentProc);
+
+      // Queue-based triggers
+      const orderQ = mk('SqsQueue', 'orders-queue', {}); link(orderQ, orderProc);
+      const payQ = mk('SqsQueue', 'payments-queue', {}); link(payQ, paymentProc);
+      const notifQ = mk('SqsQueue', 'notifications-queue', {}); link(notifQ, notifier);
+      const syncQ = mk('SqsQueue', 'sync-queue', {}); link(syncQ, dataSync);
+      const dlq = mk('SqsQueue', 'orders-dlq', {}); link(orderQ, dlq, 'Invokes');
+
+      // SNS fan-out
+      const orderEvents = mk('SnsTopic', 'order-events', {}); link(orderEvents, notifQ); link(orderEvents, syncQ); link(orderEvents, auditLog);
+      const userEvents = mk('SnsTopic', 'user-events', {}); link(userEvents, emailWorker); link(userEvents, auditLog);
+      const alerts = mk('SnsTopic', 'system-alerts', {}); link(alerts, notifier);
+
+      // Step Functions chain — triggers Chain Gang badge (4+ hops)
+      const sfOrder = mk('StepFunction', 'order-fulfillment-flow', {});
+      link(sfOrder, orderProc, 'Invokes'); link(sfOrder, paymentProc, 'Invokes'); link(sfOrder, notifier, 'Invokes');
+      link(orderProc, paymentProc, 'Invokes'); link(paymentProc, notifier, 'Invokes'); link(notifier, emailWorker, 'Invokes');
+
+      // S3 buckets
+      const uploads = mk('S3Bucket', 'media-uploads', {}); link(uploads, imgResize);
+      const reports = mk('S3Bucket', 'reports-output', {}); link(reportGen, reports, 'Invokes');
+      const dataLake = mk('S3Bucket', 'data-lake', {}); link(dataSync, dataLake, 'Invokes');
+
+      // EventRules — some connected, some orphaned (Phantom trigger)
+      const dailyCleanup = mk('EventRule', 'daily-cleanup', {}); link(dailyCleanup, legacyIngest);
+      const hourlySync = mk('EventRule', 'hourly-sync', {}); link(hourlySync, dataSync);
+      const orderPlaced = mk('EventRule', 'order-placed', {}); link(orderPlaced, orderProc); link(orderPlaced, auditLog);
+      const userSignup = mk('EventRule', 'user-signup-rule', {}); link(userSignup, emailWorker); link(userSignup, userAuth);
+      // Orphan EventRules (no edges at all) — trigger Phantom Rules badge
+      mk('EventRule', 'deprecated-nightly-job', {});
+      mk('EventRule', 'old-user-cleanup', {});
+      mk('EventRule', 'unused-metric-flush', {});
+      mk('EventRule', 'stale-data-purge', {});
+      mk('EventRule', 'legacy-health-check', {});
+
+      // Hub connections — everything invokes common-http-handler (WTF badge)
+      [orderProc, paymentProc, notifier, userAuth, imgResize, dataSync, reportGen, emailWorker, auditLog, apiHandler,
+        legacyIngest, oldProcessor, pyLegacy, heavyETL, dataLoader].forEach(id => link(id, commonLib, 'Invokes'));
+      // EventRules also trigger common-http
+      [dailyCleanup, hourlySync, orderPlaced, userSignup].forEach(id => link(id, commonLib));
+      // Queues trigger common-http
+      [orderQ, payQ, notifQ, syncQ].forEach(id => link(id, commonLib));
+      // Topics publish to common-http
+      [orderEvents, userEvents, alerts].forEach(id => link(id, commonLib));
+
+      // Isolated nodes — trigger Ghost Town badge
+      mk('Lambda', 'unused-test-fn', { runtime: 'nodejs20.x', memory_size: 128, timeout: 3 });
+      mk('Lambda', 'dev-scratch-pad', { runtime: 'python3.12', memory_size: 128, timeout: 3 });
+      mk('SqsQueue', 'abandoned-queue', {});
+      mk('S3Bucket', 'temp-staging-bucket', {});
+      mk('Lambda', 'old-migration-tool', { runtime: 'nodejs12.x', memory_size: 256, timeout: 60 });
+      mk('Lambda', 'dead-cron-handler', { runtime: 'python3.9', memory_size: 128, timeout: 30 });
+      mk('EventRule', 'orphan-rule-alpha', {});
+      mk('EventRule', 'orphan-rule-beta', {});
+
+      // Naming cluster — trigger Naming Tribe badge
+      for (let i = 1; i <= 10; i++) {
+        const asyncFn = mk('Lambda', 'async-worker-' + i, { runtime: 'nodejs20.x', memory_size: 256, timeout: 30 });
+        if (i <= 5) link(orderEvents, asyncFn);
+        if (i > 5) link(userEvents, asyncFn);
+      }
+
       return { generated_at: new Date().toISOString(), profile: 'demo', regions: [reg], nodes, edges, warnings: [], stats: { node_count: nodes.length, edge_count: edges.length } };
     }
 
@@ -2422,6 +2512,12 @@
         outDeg[e.from] = (outDeg[e.from] || 0) + 1;
       });
 
+      // Share a single risk engine instance for all badge computations
+      var eng = null;
+      if (typeof HawkRiskEngine === 'function') {
+        try { eng = window.riskEngine || HawkRiskEngine(data.nodes, data.edges); } catch (e) { }
+      }
+
       // Compute degrees
       var nodeDegs = data.nodes.map(function (n) {
         return { id: n.id, name: n.name, kind: n.kind, total: (inDeg[n.id] || 0) + (outDeg[n.id] || 0), inn: inDeg[n.id] || 0, out: outDeg[n.id] || 0, props: n.props || {} };
@@ -2444,10 +2540,9 @@
         });
       }
 
-      // 2. SPOF — articulation points (if risk engine is available)
-      if (typeof HawkRiskEngine === 'function') {
+      // 2. SPOF — articulation points
+      if (eng) {
         try {
-          var eng = HawkRiskEngine(data.nodes, data.edges);
           var apsResult = eng.findArticulationPoints();
           var aps = apsResult ? (apsResult.forEach ? Array.from(apsResult) : []) : [];
           if (aps.length > 0) {
@@ -2530,13 +2625,12 @@
         });
       }
 
-      // 8. Blast Zone — highest blast radius (if engine available)
-      if (typeof HawkRiskEngine === 'function') {
+      // 8. Blast Zone — highest blast radius
+      if (eng) {
         try {
-          var eng2 = HawkRiskEngine(data.nodes, data.edges);
           var maxBlast = { name: '', affected: 0, id: null };
           data.nodes.forEach(function (n) {
-            var b = eng2.blastRadius(n.id);
+            var b = eng.blastRadius(n.id);
             if (b.totalCount > maxBlast.affected) maxBlast = { name: n.name, affected: b.totalCount, id: n.id, depth: b.maxDepth };
           });
           if (maxBlast.affected >= 3) {
@@ -2566,10 +2660,9 @@
       }
 
       // 10. Chain Gang — longest dependency chain
-      if (typeof HawkRiskEngine === 'function') {
+      if (eng) {
         try {
-          var eng3 = HawkRiskEngine(data.nodes, data.edges);
-          var lcp = eng3.longestCriticalPath();
+          var lcp = eng.longestCriticalPath();
           if (lcp && lcp.length >= 3) {
             var chainNames = lcp.path.slice(0, 4).map(function (id) { return (nodeMap[id] || {}).name || id.split(':').pop(); });
             badges.push({

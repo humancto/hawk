@@ -38,15 +38,20 @@ Point it at an AWS account, get a complete picture of what triggers what.
 
 ## Features
 
-| Feature                  | Description                                                        |
-| ------------------------ | ------------------------------------------------------------------ |
-| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity                       |
-| **Deterministic output** | Sorted, deduped JSON for stable diffs                              |
-| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer                |
-| **Snapshot diffing**     | Compare two scans to see what changed                              |
-| **Web viewer**           | Cytoscape.js app with force layout, search, focus mode, clustering |
-| **Native viewer**        | Bevy 2D app with force layout, pan/zoom, search, filters           |
-| **Security-conscious**   | Env var values, secrets, and tokens are never exported             |
+| Feature                  | Description                                                              |
+| ------------------------ | ------------------------------------------------------------------------ |
+| **Auto-discovery**       | Scans 7 AWS services for Lambda connectivity                             |
+| **Deterministic output** | Sorted, deduped JSON for stable diffs                                    |
+| **Mermaid export**       | Paste into GitHub, Notion, or any Markdown renderer                      |
+| **Snapshot diffing**     | Compare two scans to see what changed                                    |
+| **Web viewer**           | Cytoscape.js app with force layout, search, focus mode, clustering       |
+| **Risk assessment**      | Real-time health scoring, SPOF detection, blast radius, what-if analysis |
+| **Graph insights**       | Auto-generated badges: WTF hubs, fossils, ghost rules, naming tribes     |
+| **Schema validation**    | Validates hawk.json on load and via `hawk validate` CLI command          |
+| **Advanced search**      | Property-based filtering: `kind:Lambda runtime:python* timeout:>300`     |
+| **Performance mode**     | Auto-scales rendering for 500+ node graphs (textures, haystack edges)    |
+| **Native viewer**        | Bevy 2D app with force layout, pan/zoom, search, filters                 |
+| **Security-conscious**   | Env var values, secrets, and tokens are never exported                   |
 
 ---
 
@@ -147,6 +152,21 @@ Discover AWS resources and write a graph JSON file.
 | `--out <file>`     | `hawk.json` | Output file path     |
 | `--pretty`         | off         | Pretty-print JSON    |
 | `--verbose`        | off         | Enable debug logging |
+
+### `hawk validate`
+
+Validate a hawk.json file for schema correctness.
+
+```bash
+hawk validate hawk-output.json
+```
+
+Checks for:
+- Required top-level fields (`nodes`, `edges`)
+- Node structure (`id`, `kind`, `name` required)
+- Edge structure (`from`, `to`, `kind` required)
+- Dangling edge references
+- Detects real AWS data vs demo data
 
 ### `hawk summary`
 
@@ -297,27 +317,63 @@ The web-based viewer uses Cytoscape.js to render the graph as an interactive for
 open apps/hawk_web/index.html
 ```
 
-**Features:**
+**Core features:**
 
 - **Force-directed, hierarchical, and circular layouts** — switch between them in the toolbar
 - **Search with autocomplete** — type to find nodes, results highlight in the graph
+- **Advanced property search** — filter by any field: `kind:Lambda runtime:python* timeout:>300`
 - **Focus mode** — click a node then press 1/2/3 to show only its N-hop neighborhood
 - **Cluster grouping** — auto-group nodes by service type
 - **Layer toggles** — show/hide Compute, Events, Storage, Orchestration layers
 - **Isolated node filter** — hide orphan nodes with zero connections
 - **Edge bundling** — duplicate edges collapsed with count badges
 - **Minimap** — overview with viewport indicator
-- **Node detail panel** — ARN, region, properties, clickable connection list
+- **Node detail panel** — ARN, region, properties, clickable connection list, Explain tab
+- **Context menu** — right-click any node for quick actions
 - **Export to PNG** — full-resolution graph export
-- **Drag-and-drop** — drop any hawk.json file onto the page
-- **Keyboard shortcuts** — Esc, F (fit), / (search), 1-3 (focus), C (cluster), I (isolate)
+- **Export to HTML** — self-contained shareable HTML file with embedded graph
+- **Drag-and-drop** — drop any hawk.json file onto the page with schema validation
+- **Toast notifications** — color-coded feedback for all actions
+- **Keyboard shortcuts** — Esc, F (fit), / (search), 1-3 (focus), C (cluster), I (isolate), R (risk)
+
+**Risk assessment:**
+
+- **Health score** — composite graph health (0-100) based on SPOFs, redundancy, connectivity
+- **Risk heatmap** — toggle risk view to color nodes by risk level
+- **Top risks** — ranked list of riskiest nodes with reasons (bridge node, high fan-in, etc.)
+- **Blast radius** — visualize downstream impact if a node fails
+- **What-if analysis** — right-click → "What if this node fails?" shows before/after comparison
+- **Recommendations** — actionable suggestions grouped by severity
+
+**Graph insights & badges** (auto-generated):
+
+| Badge | Trigger |
+| --- | --- |
+| 🤯 **WTF** | Node with extreme number of connections |
+| 💀 **SPOF** | Single points of failure (articulation points) |
+| 🏙️ **Ghost Town** | High percentage of isolated/orphan nodes |
+| 👻 **Phantom Rules** | EventRules with zero edges |
+| 🦕 **Fossil** | Lambdas on deprecated runtimes |
+| 🏋️ **Heavy Lifter** | Lambdas with 1GB+ RAM or 5min+ timeout |
+| 🕷️ **Spider** | Highest fan-out node |
+| 💣 **Nuke Zone** | Highest blast radius |
+| ⛓️ **Chain Gang** | Longest dependency chain |
+| 🏷️ **Naming Tribe** | Largest naming convention cluster |
+
+**Performance mode** (auto-enabled for 200+ nodes):
+
+- Disables shadows, dashed edges, and edge animations
+- Uses haystack (straight) edges for 500+ nodes
+- Texture caching during pan/zoom
+- Draft-quality force layout with reduced iterations
+- Throttled minimap rendering (10fps)
 
 **UI panels:**
 
-- **Left panel** — search, layer toggles, stats bars, keyboard shortcuts
-- **Right panel** — selected node details (name, kind, ARN, region, connections, properties)
-- **Top toolbar** — layout selector, focus depth, cluster toggle, export
-- **Bottom bar** — node/edge counts, zoom level
+- **Left panel** — search, layer toggles, stats bars, graph insights badges, keyboard shortcuts
+- **Right panel** — selected node details, Explain tab, Risk tab
+- **Top toolbar** — layout selector, focus depth, cluster toggle, risk view, blast radius, export
+- **Bottom bar** — node/edge counts, health score, severity badges, zoom level
 
 ## Native Viewer (Bevy)
 
@@ -389,10 +445,13 @@ Hawk requires **read-only** access. Minimal policy:
 Hawk is designed to be safe to run against production accounts:
 
 - Environment variable **values are never exported** — only keys are recorded
-- Secrets, tokens, and auth data are **redacted** from all output
+- Secrets, tokens, and auth data are **redacted** using an allowlist approach (only structural keys pass through)
 - **No write operations** — Hawk only calls read/list/describe APIs
 - **No data leaves your machine** — output is written to local files only
 - Inline policy documents are excluded unless explicitly requested
+- **CDN integrity** — all external scripts use SRI (Subresource Integrity) hashes
+- **Content Security Policy** — CSP meta tag restricts script sources
+- **Schema validation** — loaded files are validated before rendering
 
 ---
 
@@ -430,11 +489,17 @@ Unit tests don't require AWS credentials — they test ARN parsing, graph operat
 
 ## Roadmap
 
+- [x] Force-directed graph layout in the viewer
+- [x] Risk assessment and health scoring
+- [x] What-if analysis and blast radius
+- [x] Graph insights and auto-badges
+- [x] Advanced property-based search
+- [x] HTML export with embedded graph
+- [x] Schema validation (CLI + viewer)
+- [x] Performance mode for large graphs
 - [ ] API Gateway v1 (REST APIs) discovery
 - [ ] Multi-region scanning in a single run
 - [ ] Multi-account scanning (AWS Organizations)
-- [x] Force-directed graph layout in the viewer
-- [ ] HTML export with interactive SVG
 - [ ] Cost annotations via Cost Explorer API
 - [ ] CloudFormation / CDK stack grouping
 - [ ] Terraform state file import
